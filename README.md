@@ -56,7 +56,7 @@ go build -trimpath -ldflags "-H windowsgui -s -w" -o ../dist/GestorTokens.exe .
 
 ## Miembros, cuadre y sesiones (migración 02)
 
-Ejecutar una vez, en orden, en el SQL Editor (después de `esquema.sql`): [supabase/02-sesiones.sql](supabase/02-sesiones.sql), [supabase/03-ajustes.sql](supabase/03-ajustes.sql) , [supabase/04-equipos.sql](supabase/04-equipos.sql) y [supabase/05-identidad.sql](supabase/05-identidad.sql) (equipos QA/Dev con su líder; el panel se filtra por equipo y abre filtrado si el usuario es líder).
+Ejecutar una vez, en orden, en el SQL Editor (después de `esquema.sql`): [supabase/02-sesiones.sql](supabase/02-sesiones.sql), [supabase/03-ajustes.sql](supabase/03-ajustes.sql) , [supabase/04-equipos.sql](supabase/04-equipos.sql) , [supabase/05-identidad.sql](supabase/05-identidad.sql) y [supabase/06-cuota.sql](supabase/06-cuota.sql) (equipos QA/Dev con su líder; el panel se filtra por equipo y abre filtrado si el usuario es líder).
 
 - **Miembros:** cada persona es única y puede tener varias máquinas. La líder crea los miembros en el dashboard y asigna cada máquina a uno.
 - **Cuadre:** el dashboard alerta cuando lo gastado no coincide con lo asignado. Avisa de:
@@ -77,7 +77,11 @@ Se recomienda informar al equipo de que el uso de la cuenta compartida se monito
 
 ## Cuota del plan (pestaña Cuota)
 
-Anthropic no expone el % de cuota de una suscripción. La líder registra la lectura de **claude.ai › Configuración › Uso** (o `/usage` en Claude Code): % del límite semanal y fecha de reinicio. El panel deduce el límite en costo equivalente y calcula % usado, ritmo, cuándo se agota y ritmo recomendado. Cada lectura nueva compara el % de claude.ai con lo que midieron los agentes: la diferencia es **uso no medido** (alguien usa la cuenta sin el agente). Se guarda en `ajustes` (clave `cuota`), sin migración nueva.
+**Automática (agente 2.3.0+, requiere [supabase/06-cuota.sql](supabase/06-cuota.sql)).** En las máquinas con la cuenta compartida, el agente consulta cada 30 minutos el mismo dato que muestra `/usage` en Claude Code (% del límite semanal, % de la sesión de 5 h, sus reinicios y el desglose Claude Code / chat) y lo envía con el RPC `registrar_cuota` a la tabla `cuota_lecturas` (máximo una lectura cada 10 min, se conservan 60 días). Usa la credencial local de Claude Code (`.credentials.json` del perfil) solo para esa consulta: no la envía, no la guarda en otro lugar ni la renueva; si está vencida, la lectura se omite. El servicio de uso no es una API documentada por Anthropic: si cambia, el agente sigue enviando el consumo y la pestaña vuelve a depender de la lectura manual.
+
+**Manual (respaldo).** La líder puede registrar la lectura de **claude.ai › Configuración › Uso**: % del límite semanal y fecha de reinicio (se guarda en `ajustes`, clave `cuota`). Si existe, su límite calibrado se usa para medir el **uso no medido**.
+
+Con cualquiera de las dos, el panel deduce el límite en costo equivalente y calcula % usado, ritmo, cuándo se agota y ritmo recomendado. La diferencia entre el % oficial y lo que miden los agentes es **uso no medido** (chat de claude.ai o máquinas sin el agente).
 
 ## 4. Dashboard
 

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
-  <assemblyIdentity version="2.2.1.0" processorArchitecture="amd64" name="DLWLatam.GestorTokens" type="win32"/>
+  <assemblyIdentity version="2.3.0.0" processorArchitecture="amd64" name="DLWLatam.GestorTokens" type="win32"/>
   <description>Gestor de Tokens - DLW Latam</description>
   <!-- Estilos visuales modernos (Common Controls 6): botones actuales y texto de ejemplo en los campos -->
   <dependency>

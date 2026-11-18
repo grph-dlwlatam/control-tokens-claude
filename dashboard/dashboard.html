@@ -539,6 +539,16 @@ dialog#dlg.peligro { border-top-color: var(--critical); }
 .cuota-fila { display: grid; grid-template-columns: 1.1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
 .cuota-fila2 { display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; }
 .cuota-fila > .card, .cuota-fila2 > .card { margin-bottom: 0; }
+.cq-estado-lect { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; color: var(--text-2); font-size: 12.5px; }
+.cq-pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 99px; font-size: 11.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; background: var(--surface-2, rgba(127,127,127,.12)); color: var(--text-2); }
+.cq-pill.on { background: rgba(137,208,33,.18); color: var(--ok-text, #4f7a0e); }
+.cq-pill.on::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #89d021; box-shadow: 0 0 0 3px rgba(137,208,33,.25); }
+.cq-pill.warn { background: rgba(250,178,25,.18); color: #9a6a00; }
+.cq-manual { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px; }
+.cq-manual > summary { cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--text-2); list-style: none; }
+.cq-manual > summary::before { content: '▸ '; }
+.cq-manual[open] > summary::before { content: '▾ '; }
+.cq-manual[open] > summary { margin-bottom: 6px; }
 .cq-med { display: flex; align-items: center; gap: 20px; }
 .cq-donut { --p: 0; --col: var(--good); width: 150px; height: 150px; flex: 0 0 150px; border-radius: 50%; display: grid; place-items: center;
   background: conic-gradient(var(--col) calc(var(--p) * 1%), var(--grid) 0); position: relative; }
@@ -748,14 +758,17 @@ tbody.animar tr { animation: rowin .45s ease both; }
         <div class="card anim cq-medidor" id="cqMedidor"></div>
         <div class="card anim cq-proy" id="cqProy"></div>
         <div class="card anim cq-calib">
-          <h2>Calibrar con claude.ai</h2>
-          <p class="cq-ayuda">Con la cuenta compartida abre <b>claude.ai › Configuración › Uso</b> (o <code class="mono">/usage</code> en Claude Code) y copia el <b>límite semanal</b>:</p>
-          <form id="fCuota" class="cq-form">
-            <label>% usado del límite semanal<input id="cqPct" type="number" min="1" max="100" step="0.1" required placeholder="Ej.: 62"></label>
-            <label>Próximo reinicio<input id="cqReinicio" type="datetime-local" required></label>
-            <button class="btn-s primary">Registrar lectura</button>
-          </form>
+          <h2>Lectura de la cuota</h2>
           <div id="cqCalibInfo" class="cq-info"></div>
+          <details id="cqManual" class="cq-manual">
+            <summary>Registrar una lectura manual</summary>
+            <p class="cq-ayuda">Con la cuenta compartida abre <b>claude.ai › Configuración › Uso</b> (o <code class="mono">/usage</code> en Claude Code) y copia el <b>límite semanal</b>:</p>
+            <form id="fCuota" class="cq-form">
+              <label>% usado del límite semanal<input id="cqPct" type="number" min="1" max="100" step="0.1" required placeholder="Ej.: 62"></label>
+              <label>Próximo reinicio<input id="cqReinicio" type="datetime-local" required></label>
+              <button class="btn-s primary">Registrar lectura</button>
+            </form>
+          </details>
         </div>
       </div>
       <div class="cuota-fila2">
@@ -956,6 +969,7 @@ let dias = 30, maquinas = [], consumo = [], miembros = [], sesiones = [], animar
 // base = datos completos; las variables de arriba son la vista filtrada por equipo.
 let base = null, equipos = [], filtroEquipo = store.get('ct_eq') ?? null;
 let ajustes = structuredClone(AJUSTES_DEF), faltan = new Set();
+let cuotaAuto = null; // última lectura automática de la cuota (tabla cuota_lecturas)
 let filtroSes = 'banderas', filtroMiembro = '', busqueda = '';
 
 async function opcional(path, migracion) {
@@ -965,15 +979,17 @@ async function cargar() {
   $('#subtitulo').textContent = 'Cargando…';
   const desde = dias ? isoDia(new Date(Date.now() - (dias - 1) * 864e5)) : '';
   faltan = new Set();
-  let filasAjustes;
-  [maquinas, consumo, miembros, sesiones, filasAjustes, equipos] = await Promise.all([
+  let filasAjustes, lecturasCuota;
+  [maquinas, consumo, miembros, sesiones, filasAjustes, equipos, lecturasCuota] = await Promise.all([
     todasLasFilas('maquinas?select=*&order=machine_id'),
     todasLasFilas(`consumo_diario?select=machine_id,dia,modelo,input_tokens,output_tokens,cache_creation_tokens,cache_read_tokens,mensajes${desde ? '&dia=gte.' + desde : ''}&order=dia,machine_id,modelo`),
     opcional('miembros?select=*&order=nombre', '02-sesiones.sql'),
     opcional(`sesiones?select=machine_id,session_id,inicio,fin,titulo,carpeta,entrypoint,por_modelo,mensajes,mensajes_subagente,revision,revisado_por${desde ? '&inicio=gte.' + desde : ''}&order=inicio.desc`, '02-sesiones.sql'),
     opcional('ajustes?select=clave,valor', '03-ajustes.sql'),
     opcional('equipos?select=*&order=nombre', '04-equipos.sql'),
+    opcional('cuota_lecturas?select=*&order=leido.desc&limit=1', '06-cuota.sql'),
   ]);
+  cuotaAuto = lecturasCuota[0] || null;
   ajustes = structuredClone(AJUSTES_DEF);
   for (const f of filasAjustes) if (f.clave in ajustes && (Array.isArray(f.valor) || f.clave === 'cuota')) ajustes[f.clave] = f.valor;
   base = { maquinas, consumo, miembros, sesiones };
@@ -1602,8 +1618,9 @@ document.addEventListener('click', e => {
 });
 
 // ---------- cuota del plan ----------
-// Anthropic no expone el % de cuota de una suscripción. La líder registra la lectura de claude.ai
-// (% del límite semanal + fecha de reinicio) y el panel deduce el límite en costo equivalente.
+// Los agentes leen el % del límite semanal (como /usage) y lo envían a cuota_lecturas. Si aún no hay
+// lectura automática, la líder puede registrar la de claude.ai a mano. El límite en costo equivalente
+// se deduce del consumo medido.
 const DIA_MS = 864e5, SEMANA_MS = 7 * DIA_MS;
 const fechaCorta = d => new Date(d).toLocaleString('es-PE', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 const duracion = ms => {
@@ -1629,21 +1646,43 @@ function consumoEntre(desde, hasta, filas = (base ? base.consumo : consumo)) {
   }
   return t;
 }
+// Fuente principal: la lectura automática que envían los agentes v2.3.0+ (mismo dato que /usage).
+// Respaldo: la calibración manual de la líder (ajustes.cuota).
 function calcularCuota() {
-  const c = ajustes.cuota;
-  if (!c || !c.reinicio || !c.limite) return null;
-  const ahora = Date.now(), { inicio, reinicio } = cicloDesde(c.reinicio, ahora);
-  const usado = consumoEntre(inicio, ahora);
-  const pct = usado / c.limite;
+  const c = ajustes.cuota, ahora = Date.now();
+  // Una lectura de un ciclo ya vencido no sirve para el ciclo actual.
+  const auto = cuotaAuto && cuotaAuto.semanal_reinicio && new Date(cuotaAuto.semanal_reinicio).getTime() > ahora ? cuotaAuto : null;
+  const reinicioIso = auto ? auto.semanal_reinicio : c?.reinicio;
+  if (!reinicioIso) return null;
+  const { inicio, reinicio } = cicloDesde(reinicioIso, ahora);
+  const sesion = auto && auto.sesion_pct != null && auto.sesion_reinicio && new Date(auto.sesion_reinicio).getTime() > ahora
+    ? { pct: +auto.sesion_pct, reinicio: new Date(auto.sesion_reinicio).getTime() } : null;
+  let limite = c?.limite || null, pct, noMedido, ult, desglose = null;
+  if (auto) {
+    const leido = new Date(auto.leido).getTime(), pctLeido = +auto.semanal_pct / 100, medidoLeido = consumoEntre(inicio, leido);
+    desglose = auto.detalle?.desglose || null;
+    // Sin calibración manual, el límite se deduce de la parte de Claude Code (lo que miden los agentes).
+    const pctCode = desglose && desglose.claude_code != null ? +desglose.claude_code / 100 : pctLeido;
+    if (!limite && pctCode >= 0.01 && medidoLeido > 0) limite = medidoLeido / pctCode;
+    pct = pctLeido + (limite ? consumoEntre(leido, ahora) / limite : 0);
+    const medidoPct = limite ? medidoLeido / limite * 100 : 0;
+    noMedido = limite ? Math.max(0, pctLeido * 100 - medidoPct) : 0;
+    ult = { fecha: auto.leido, pct: +auto.semanal_pct, medidoPct, auto: true };
+    if (!limite) return { sinLimite: true, auto: true, inicio, reinicio, pct, sesion, ultima: ult, desglose, noMedido: 0 };
+  } else {
+    if (!limite) return null;
+    pct = consumoEntre(inicio, ahora) / limite;
+    ult = (c.lecturas || []).at(-1);
+    noMedido = ult ? Math.max(0, ult.pct - ult.medidoPct) : 0;
+  }
+  const usado = pct * limite;                                           // incluye el uso que no reportan los agentes
   const transcurrido = Math.max(ahora - inicio, 6 * 36e5);              // mínimo 6 h para no exagerar el ritmo al inicio
   const ritmoDia = usado / (transcurrido / DIA_MS);
-  const restante = Math.max(0, c.limite - usado);
+  const restante = Math.max(0, limite - usado);
   const fechaAgota = ritmoDia > 0 ? ahora + restante / ritmoDia * DIA_MS : Infinity;
-  const pctAlReinicio = (usado + ritmoDia * (reinicio - ahora) / DIA_MS) / c.limite;
+  const pctAlReinicio = (usado + ritmoDia * (reinicio - ahora) / DIA_MS) / limite;
   const ritmoRecomendado = restante / Math.max((reinicio - ahora) / DIA_MS, 0.05);
-  const ult = (c.lecturas || []).at(-1);
-  const noMedido = ult ? Math.max(0, ult.pct - ult.medidoPct) : 0;
-  return { ...c, inicio, reinicio, usado, pct, ritmoDia, restante, fechaAgota, agotaAntes: fechaAgota < reinicio, pctAlReinicio, ritmoRecomendado, noMedido, ultima: ult };
+  return { auto: !!auto, limite, inicio, reinicio, usado, pct, ritmoDia, restante, fechaAgota, agotaAntes: fechaAgota < reinicio, pctAlReinicio, ritmoRecomendado, noMedido, ultima: ult, sesion, desglose };
 }
 
 function renderCuota() {
@@ -1656,11 +1695,40 @@ function renderCuota() {
     const r = cq ? new Date(cq.reinicio) : null;
     $('#cqReinicio').value = r ? new Date(r.getTime() - r.getTimezoneOffset() * 6e4).toISOString().slice(0, 16) : '';
   }
+  const manual = $('#cqManual');
   if (!cq) {
-    $('#cqMedidor').innerHTML = '<h2>Cuota semanal del plan</h2><div class="cq-vacio"><div class="cq-donut vacio"><span>—</span></div><p>Aún no hay lectura. Registra el <b>% usado</b> y el <b>próximo reinicio</b> que muestra claude.ai para la cuenta compartida.</p></div>';
-    $('#cqProy').innerHTML = '<h2>Proyección</h2><ol class="cq-pasos"><li>Entra a <b>claude.ai</b> con la cuenta compartida.</li><li>Abre <b>Configuración › Uso</b>.</li><li>Copia el <b>% del límite semanal</b> y la <b>fecha de reinicio</b> en «Calibrar».</li><li>El panel calcula el límite y proyecta cuándo se agota.</li></ol>';
-    $('#cqCalibInfo').innerHTML = '';
+    if (!manual.dataset.tocado) manual.open = true;
+    $('#cqMedidor').innerHTML = '<h2>Cuota semanal del plan</h2><div class="cq-vacio"><div class="cq-donut vacio"><span>—</span></div><p>Aún no hay lectura. Se llena sola cuando un <b>GestorTokens 2.3.0</b> con la cuenta compartida envíe su primer reporte (cada 30 min).</p></div>';
+    $('#cqProy').innerHTML = '<h2>Proyección</h2><ol class="cq-pasos"><li>Instala o actualiza <b>GestorTokens.exe 2.3.0</b> en una máquina con la cuenta compartida.</li><li>El agente lee el <b>% del límite semanal</b> y su <b>reinicio</b> (lo mismo que <code class="mono">/usage</code>).</li><li>El panel proyecta cuándo se agota y quién la consume.</li></ol>';
+    $('#cqCalibInfo').innerHTML = '<div class="cq-estado-lect"><span class="cq-pill off">Sin lectura automática</span></div>' + (faltan.has('06-cuota.sql') ? '<div class="small">Falta ejecutar <b>06-cuota.sql</b> en Supabase.</div>' : '');
     $('#cqGrafico').innerHTML = '<p class="lm-vacio">El gráfico aparece después de la primera lectura.</p>';
+    $('#cqLeyenda').innerHTML = '';
+    $('#cqQuien').innerHTML = '<p class="lm-vacio">—</p>';
+    return;
+  }
+  if (!manual.dataset.tocado) manual.open = false;
+  // Estado de la lectura (automática o manual)
+  const ult = cq.ultima, hace = ult ? Date.now() - new Date(ult.fecha).getTime() : Infinity;
+  const des = cq.desglose, nomDes = { claude_code: 'Claude Code', chat: 'chat claude.ai', cowork: 'Cowork', other: 'otros' };
+  const desTxt = des ? Object.entries(des).filter(([, v]) => +v > 0).map(([k, v]) => (nomDes[k] || esc(k)) + ' <b>' + (+v).toFixed(0) + '%</b>').join(' · ') : '';
+  $('#cqCalibInfo').innerHTML = (cq.auto
+    ? '<div class="cq-estado-lect"><span class="cq-pill ' + (hace > 2 * 36e5 ? 'warn' : 'on') + '">Automática</span><span>hace ' + duracion(hace) + '</span></div>' +
+      '<div><small>Límite semanal</small> <b>' + ult.pct.toFixed(0) + '%</b> usado' + (desTxt ? '<div class="small">' + desTxt + '</div>' : '') + '</div>' +
+      (hace > 2 * 36e5 ? '<div class="small">Ningún agente con la cuenta compartida reporta hace más de 2 h.</div>' : '')
+    : '<div class="cq-estado-lect"><span class="cq-pill off">Manual</span><span>' + (ult ? fechaCorta(ult.fecha) : '') + '</span></div>' +
+      (ult ? '<div>claude.ai <b>' + ult.pct.toFixed(1) + '%</b> · agentes <b>' + ult.medidoPct.toFixed(1) + '%</b></div>' : '') +
+      (ult && hace > 3 * DIA_MS ? '<div class="small">La última lectura tiene más de 3 días.</div>' : '')) +
+    (cq.sinLimite ? '' : cq.noMedido >= 5 ? '<div class="cq-alerta">⚠ ' + cq.noMedido.toFixed(1) + '% del uso no lo reporta ningún agente (chat de claude.ai o máquinas sin GestorTokens).</div>' : '<div class="cq-okmsg">✓ El uso medido coincide con la cuota.</div>') +
+    (!cq.auto && ult ? '<button class="link-s" id="cqRecal">Recalcular el límite con la última lectura</button>' : '');
+  $('#cqRecal')?.addEventListener('click', recalcularLimite);
+  const sesTxt = cq.sesion ? '<div><small>Sesión de 5 h</small><b>' + cq.sesion.pct.toFixed(0) + '%</b><small> · reinicia en ' + duracion(cq.sesion.reinicio - Date.now()) + '</small></div>' : '';
+  if (cq.sinLimite) {
+    const p0 = Math.min(cq.pct, 1), est0 = cq.pct >= 0.9 ? 'bad' : cq.pct >= 0.7 ? 'warn' : 'ok';
+    $('#cqMedidor').innerHTML = '<h2>Cuota semanal del plan</h2><div class="cq-med"><div class="cq-donut ' + est0 + '" style="--p:' + p0 * 100 + '"><span><b>' + Math.round(cq.pct * 100) + '%</b><small>usado</small></span></div>' +
+      '<div class="cq-datos"><span class="cq-estado ' + est0 + '">' + { ok: 'En rango', warn: 'Atención', bad: 'Crítico' }[est0] + '</span>' + sesTxt +
+      '<div><small>Ciclo</small><b class="cq-f">' + fechaCorta(cq.inicio) + ' → ' + fechaCorta(cq.reinicio) + '</b></div></div></div>';
+    $('#cqProy').innerHTML = '<h2>Proyección</h2><div class="cq-kpis"><div><small>Reinicia en</small><b>' + duracion(cq.reinicio - Date.now()) + '</b></div></div><p class="small">La proyección aparece cuando los agentes reporten consumo en este ciclo.</p>';
+    $('#cqGrafico').innerHTML = '<p class="lm-vacio">Esperando consumo medido de los agentes en este ciclo.</p>';
     $('#cqLeyenda').innerHTML = '';
     $('#cqQuien').innerHTML = '<p class="lm-vacio">—</p>';
     return;
@@ -1672,7 +1740,7 @@ function renderCuota() {
     '<div class="cq-donut ' + estado + '" style="--p:' + Math.min(p, 1) * 100 + '"><span><b>' + Math.round(cq.pct * 100) + '%</b><small>usado</small></span></div>' +
     '<div class="cq-datos"><span class="cq-estado ' + estado + '">' + etiqueta + '</span>' +
     '<div><small>Consumido</small><b>' + usd(cq.usado) + '</b><small> de ' + usd(cq.limite) + ' eq.</small></div>' +
-    '<div><small>Disponible</small><b>' + usd(cq.restante) + '</b></div>' +
+    '<div><small>Disponible</small><b>' + usd(cq.restante) + '</b></div>' + sesTxt +
     '<div><small>Ciclo</small><b class="cq-f">' + fechaCorta(cq.inicio) + ' → ' + fechaCorta(cq.reinicio) + '</b></div></div></div>';
   // Proyección
   const agota = cq.agotaAntes
@@ -1682,15 +1750,6 @@ function renderCuota() {
     '<div><small>Reinicia en</small><b>' + duracion(cq.reinicio - Date.now()) + '</b></div>' +
     '<div><small>Ritmo actual</small><b>' + usd(cq.ritmoDia) + '/día</b></div>' +
     '<div><small>Ritmo para llegar</small><b class="' + (cq.ritmoDia > cq.ritmoRecomendado ? 'rojo' : '') + '">' + usd(cq.ritmoRecomendado) + '/día</b></div></div>';
-  // Info de calibración
-  const ult = cq.ultima;
-  $('#cqCalibInfo').innerHTML = ult
-    ? '<div><small>Última lectura</small> ' + fechaCorta(ult.fecha) + ' · claude.ai <b>' + ult.pct.toFixed(1) + '%</b> · agentes <b>' + ult.medidoPct.toFixed(1) + '%</b></div>' +
-      (cq.noMedido >= 5 ? '<div class="cq-alerta">⚠ ' + cq.noMedido.toFixed(1) + '% del uso no lo reporta ningún agente: alguien usa la cuenta sin GestorTokens.</div>' : '<div class="cq-okmsg">✓ El uso medido coincide con claude.ai.</div>') +
-      (Date.now() - new Date(ult.fecha) > 3 * DIA_MS ? '<div class="small">Conviene registrar una lectura nueva (la última tiene más de 3 días).</div>' : '') +
-      '<button class="link-s" id="cqRecal">Recalcular el límite con la última lectura</button>'
-    : '';
-  $('#cqRecal')?.addEventListener('click', recalcularLimite);
   renderGraficoCuota(cq);
   renderQuienCuota(cq);
 }
@@ -1966,9 +2025,8 @@ function demo() {
   prepararDatos();
   {
     const reinicio = new Date(Date.now() + 2.2 * DIA_MS); reinicio.setMinutes(0, 0, 0);
-    const usado = consumoEntre(reinicio.getTime() - SEMANA_MS, Date.now());
-    const limite = usado / 0.7;
-    ajustes.cuota = { reinicio: reinicio.toISOString(), limite, lecturas: [{ fecha: new Date(Date.now() - 6 * 36e5).toISOString(), pct: 74, medidoPct: 66 }] };
+    ajustes.cuota = null;
+    cuotaAuto = { machine_id: 'demo', leido: new Date(Date.now() - 12 * 6e4).toISOString(), semanal_pct: 74, semanal_reinicio: reinicio.toISOString(), sesion_pct: 38, sesion_reinicio: new Date(Date.now() + 2.4 * 36e5).toISOString(), detalle: { desglose: { claude_code: 66, chat: 8, cowork: 0, other: 0 } } };
   }
   mostrar('dash'); $('#subtitulo').textContent = 'MODO DEMO · datos sintéticos'; animar = true; render();
 }
@@ -2036,6 +2094,7 @@ $('#fEquipo').addEventListener('submit', async e => {
   } catch (err) { aviso('No se pudo crear: ' + err.message, 'error'); }
 });
 $('#fCuota').addEventListener('submit', registrarLectura);
+$('#cqManual summary').addEventListener('click', () => { $('#cqManual').dataset.tocado = '1'; });
 $('#bSalir').addEventListener('click', () => { store.del('ct_sesion'); sesion = null; mostrar('login'); });
 let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { altoGrafico = null; if (consumo.length) render(); }, 150); });
 setInterval(() => { if (sesion && !$('#vDash').hidden) cargar().catch(() => {}); }, 5 * 60 * 1000);

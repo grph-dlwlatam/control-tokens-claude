@@ -35,7 +35,7 @@ import (
 )
 
 const (
-	version       = "2.2.1"
+	version       = "2.3.0"
 	nombreTarea   = "GestorTokensDLW"
 	nombreExe     = "GestorTokens.exe"
 	diasRecalculo = 7
@@ -187,12 +187,13 @@ func medir() (string, error) {
 	// Una PC puede tener varias carpetas de Claude Code (CLAUDE_CONFIG_DIR), cada una con su cuenta.
 	// Solo se suman las carpetas cuya sesión es la cuenta compartida.
 	perfiles := perfilesClaude()
-	var carpetas, resumen []string
+	var carpetas, resumen, perfilesCuenta []string
 	for _, p := range perfiles {
 		coincide := p.cuenta == strings.ToLower(cuentaObjetivo)
 		resumen = append(resumen, fmt.Sprintf("%s=%s(%v)", filepath.Base(p.dir), ocultar(p.cuenta), coincide))
 		if coincide || flags["dry-run"] {
 			carpetas = append(carpetas, filepath.Join(p.dir, "projects"))
+			perfilesCuenta = append(perfilesCuenta, p.dir)
 		}
 	}
 	logf("carpetas Claude: %s", strings.Join(resumen, " "))
@@ -228,7 +229,11 @@ func medir() (string, error) {
 		nombre, correo = quien.Nombre, quien.Correo
 	}
 	payload := map[string]any{"machine_id": id, "hostname": host, "usuario": usuario, "version": version, "nombre": nombre, "correo": correo, "filas": filas, "sesiones": sesiones}
+	cuota := cuotaDe(perfilesCuenta)
 	if flags["dry-run"] {
+		if cuota != nil {
+			payload["cuota"] = cuota
+		}
 		b, _ := json.MarshalIndent(payload, "", "  ")
 		salida := filepath.Join(dirInstal, "dry-run.json")
 		if err := os.WriteFile(salida, b, 0o644); err != nil {
@@ -255,11 +260,21 @@ func medir() (string, error) {
 		_ = os.WriteFile(filepath.Join(dirInstal, "estado.json"), b, 0o644)
 	}
 	logf("OK: %d filas enviadas.", len(filas))
+	cuotaTxt := ""
+	if cuota != nil {
+		cuota["machine_id"] = id
+		if err := enviarRPC("registrar_cuota", cuota); err != nil {
+			logf("Cuota no enviada: %v", err) // no es crítico: el consumo ya se envió
+		} else {
+			logf("Cuota enviada: semanal %.1f%%", cuota["semanal_pct"])
+			cuotaTxt = fmt.Sprintf("\nCuota semanal de la cuenta: %.0f%%", cuota["semanal_pct"])
+		}
+	}
 	quienTxt := ""
 	if quien != nil {
 		quienTxt = fmt.Sprintf("\nRegistrado como: %s <%s>", quien.Nombre, quien.Correo)
 	}
-	return fmt.Sprintf("Consumo enviado correctamente.\n\nEquipo: %s · %s%s\nDías/modelos reportados: %d", host, usuario, quienTxt, len(filas)), nil
+	return fmt.Sprintf("Consumo enviado correctamente.\n\nEquipo: %s · %s%s\nDías/modelos reportados: %d%s", host, usuario, quienTxt, len(filas), cuotaTxt), nil
 }
 
 type perfil struct{ dir, cuenta string }
@@ -577,9 +592,23 @@ func recolectar(desde string, carpetas []string) (int, []fila, []sesion) {
 	return archivos, out, lista
 }
 
-func enviar(payload map[string]any) error {
+func enviar(payload map[string]any) error { return enviarRPC("registrar_consumo", payload) }
+
+// cuotaDe lee la cuota del plan desde el primer perfil con credencial vigente; nil si no se pudo.
+func cuotaDe(perfiles []string) map[string]any {
+	for _, d := range perfiles {
+		c, err := leerCuota(d)
+		if err == nil {
+			return c
+		}
+		logf("Cuota no leida en %s: %v", filepath.Base(d), err)
+	}
+	return nil
+}
+
+func enviarRPC(funcion string, payload map[string]any) error {
 	cuerpo, _ := json.Marshal(map[string]any{"p": payload})
-	req, err := http.NewRequest("POST", strings.TrimRight(supabaseURL, "/")+"/rest/v1/rpc/registrar_consumo", bytes.NewReader(cuerpo))
+	req, err := http.NewRequest("POST", strings.TrimRight(supabaseURL, "/")+"/rest/v1/rpc/"+funcion, bytes.NewReader(cuerpo))
 	if err != nil {
 		return err
 	}
