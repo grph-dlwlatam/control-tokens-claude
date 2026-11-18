@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Consumo Claude Code · DLW</title>
+<title>Gestor de Tokens · DLW</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 /* Identidad DLW Latam: azul marino #1e2c54, verde #89d021, Barlow */
 :root {
@@ -95,11 +95,37 @@ tbody tr:first-child .pos { background: var(--lime); color: #1e2c54; }
 .st.ok { color: var(--good); } .st.warn { color: var(--warning); } .st.bad { color: var(--critical); }
 .note { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
 /* Login */
-.login-wrap { min-height: 100vh; display: grid; place-items: center; padding: 16px; background: var(--navy); }
+.login-wrap { position: relative; overflow: hidden; min-height: 100vh; display: grid; place-items: center; padding: 32px 16px; background: radial-gradient(1200px 600px at 10% -10%, #2a3d72 0%, transparent 60%), var(--navy); }
+.login-grid { position: relative; z-index: 1; width: 100%; max-width: 1080px; display: grid; grid-template-columns: 1.15fr .85fr; gap: 56px; align-items: center; }
+.bg-grid { position: absolute; inset: -40px; background-image: linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px); background-size: 40px 40px; mask-image: radial-gradient(ellipse at 40% 40%, #000 30%, transparent 75%); animation: gridmove 24s linear infinite; }
+@keyframes gridmove { to { transform: translate(40px, 40px); } }
+.glow { position: absolute; border-radius: 50%; filter: blur(80px); opacity: .35; pointer-events: none; }
+.glow.g1 { width: 420px; height: 420px; background: #89d021; left: -120px; bottom: -160px; animation: float 14s ease-in-out infinite; }
+.glow.g2 { width: 360px; height: 360px; background: #2a78d6; right: -100px; top: -120px; opacity: .3; animation: float 18s ease-in-out infinite reverse; }
+@keyframes float { 50% { transform: translate(60px, -40px) scale(1.1); } }
+.hero { color: #fff; }
+.hero-logo { height: 42px; display: block; margin-bottom: 28px; }
+.pill { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 999px; background: rgba(137,208,33,.14); border: 1px solid rgba(137,208,33,.45); color: #c8f07f; font-size: 13px; font-weight: 600; letter-spacing: .02em; }
+.pill code, code.mono { font-family: 'JetBrains Mono', Consolas, monospace; color: var(--lime); font-weight: 700; }
+.pill.sm { padding: 2px 9px; font-size: 12px; vertical-align: middle; margin-left: 6px; }
+.hero-t { font-size: 40px; line-height: 1.12; font-weight: 700; margin: 18px 0 12px; letter-spacing: -.01em; }
+.hero-t em { font-style: normal; background: linear-gradient(90deg, #89d021, #cdff00); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero-p { color: #b9c2d8; font-size: 17px; margin: 0 0 26px; max-width: 520px; }
+.term { background: #0b1226; border: 1px solid rgba(255,255,255,.1); border-radius: 10px; box-shadow: 0 20px 50px rgba(0,0,0,.45), 0 0 0 1px rgba(137,208,33,.08); overflow: hidden; max-width: 560px; }
+.term-bar { display: flex; align-items: center; gap: 7px; padding: 10px 14px; background: #121a33; border-bottom: 1px solid rgba(255,255,255,.07); }
+.term-bar i { width: 11px; height: 11px; border-radius: 50%; background: #3a4566; }
+.term-bar i:first-child { background: #e5534b; } .term-bar i:nth-child(2) { background: #f0b232; } .term-bar i:nth-child(3) { background: #89d021; }
+.term-bar span { margin-left: 8px; color: #8590ab; font: 12px 'JetBrains Mono', Consolas, monospace; }
+.term pre { margin: 0; padding: 16px 18px; min-height: 182px; color: #d6dcea; font: 13.5px/1.65 'JetBrains Mono', Consolas, monospace; white-space: pre-wrap; }
+.term .p { color: #89d021; } .term .c { color: #7ebec5; } .term .ok { color: #89d021; } .term .m { color: #8590ab; } .term .w { color: #fff; font-weight: 700; }
+.cursor { display: inline-block; width: 8px; height: 1.1em; background: #89d021; vertical-align: text-bottom; animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+@media (max-width: 900px) { .login-grid { grid-template-columns: 1fr; gap: 28px; } .hero-t { font-size: 30px; } .term pre { min-height: 150px; font-size: 12px; } }
 .login { width: 100%; max-width: 380px; background: var(--surface); border-radius: 6px; border-top: 4px solid var(--lime); padding: 28px; box-shadow: 0 10px 40px rgba(0,0,0,.3); }
 .login .logo { background: var(--navy); margin: -28px -28px 20px; padding: 20px 28px; }
 .login .logo img { height: 34px; display: block; }
-.login h1 { font-size: 20px; margin: 0; }
+.login h1 { font-size: 26px; margin: 2px 0 0; letter-spacing: -.01em; }
+.eyebrow { display: block; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--good); }
 .login label { display: block; font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--text-2); margin: 14px 0 4px; }
 .login input { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg); color: var(--text); font: inherit; }
 .login input:focus { outline: 2px solid var(--lime); border-color: var(--lime); }
@@ -109,6 +135,25 @@ tbody tr:first-child .pos { background: var(--lime); color: #1e2c54; }
 footer { background: var(--navy); color: #b9c2d8; font-size: 13px; }
 footer div { max-width: 1240px; margin: 0 auto; padding: 14px 16px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
 footer b { color: #fff; font-weight: 600; }
+/* Animaciones */
+@keyframes up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.anim { animation: up .65s cubic-bezier(.2,.7,.2,1) both; }
+.kpis.animar .kpi { animation: up .6s cubic-bezier(.2,.7,.2,1) both; }
+.kpi { transition: transform .2s, box-shadow .2s; }
+.kpi:hover, .card:hover { box-shadow: 0 6px 22px rgba(30,44,84,.12); }
+.kpi:hover { transform: translateY(-2px); }
+.card { transition: box-shadow .25s; }
+@keyframes grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+svg.animar .bar-g { transform-box: fill-box; transform-origin: bottom; animation: grow .7s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes rowin { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
+tbody.animar tr { animation: rowin .45s ease both; }
+.share .bar i { transition: width .9s cubic-bezier(.2,.7,.2,1); }
+.live { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #89d021; margin-right: 7px; vertical-align: middle; box-shadow: 0 0 0 0 rgba(137,208,33,.7); animation: pulse 2s infinite; }
+@keyframes pulse { 70% { box-shadow: 0 0 0 8px rgba(137,208,33,0); } 100% { box-shadow: 0 0 0 0 rgba(137,208,33,0); } }
+.brand { position: relative; }
+.brand::after { content: ""; position: absolute; left: 0; right: 0; bottom: -4px; height: 4px; background: linear-gradient(90deg, transparent, #cdff00, transparent); background-size: 40% 100%; background-repeat: no-repeat; animation: sweep 6s ease-in-out infinite; opacity: .8; }
+@keyframes sweep { 0% { background-position: -40% 0; } 100% { background-position: 140% 0; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 [hidden] { display: none !important; }
 @media (max-width: 640px) { .brand-id .sep, .brand-id p { display: none; } .brand-id h1 { font-size: 17px; } .kpi .val { font-size: 26px; } }
 </style>
@@ -116,10 +161,25 @@ footer b { color: #fff; font-weight: 600; }
 <body>
 <!-- ========= Login ========= -->
 <section id="vLogin" class="login-wrap" hidden>
-  <div class="login">
+  <div class="bg-grid" aria-hidden="true"></div>
+  <div class="glow g1" aria-hidden="true"></div>
+  <div class="glow g2" aria-hidden="true"></div>
+  <div class="login-grid">
+    <div class="hero anim">
+      <img class="hero-logo" src="delaware-logo-blanco.png" alt="DLW Latam">
+      <span class="pill"><code>&gt;_</code> Gestor de Tokens · Claude Code</span>
+      <h1 class="hero-t">Visibilidad del consumo de <em>Claude Code</em> en todo el equipo</h1>
+      <p class="hero-p">Quién consume, cuánto y con qué modelo, máquina por máquina. Sin leer prompts ni código.</p>
+      <div class="term" aria-hidden="true">
+        <div class="term-bar"><i></i><i></i><i></i><span>claude — consumo-equipo</span></div>
+        <pre id="termTxt"></pre>
+      </div>
+    </div>
+  <div class="login anim" style="animation-delay:.12s">
     <div class="logo"><img src="delaware-logo-blanco.png" alt="DLW Latam"></div>
-    <h1>Control de consumo · Claude Code</h1>
-    <p class="sub">Ingresa con tu usuario del panel.</p>
+    <span class="eyebrow">Claude Code · Anthropic</span>
+    <h1>Gestor de Tokens</h1>
+    <p class="sub">Ingresa con tu usuario del panel para ver el consumo del equipo.</p>
     <form id="fLogin">
       <label for="email">Correo</label>
       <input id="email" type="email" autocomplete="username" required>
@@ -128,6 +188,7 @@ footer b { color: #fff; font-weight: 600; }
       <div class="err" id="loginErr"></div>
       <button class="btn primary">Ingresar</button>
     </form>
+  </div>
   </div>
 </section>
 
@@ -139,8 +200,8 @@ footer b { color: #fff; font-weight: 600; }
         <img src="delaware-logo-blanco.png" alt="DLW Latam">
         <span class="sep"></span>
         <div>
-          <h1>Control de consumo · Claude Code</h1>
-          <p id="subtitulo">Cuenta compartida del equipo</p>
+          <h1>Gestor de Tokens <span class="pill sm"><code>&gt;_</code> Claude Code · Anthropic</span></h1>
+          <p><span class="live" title="Se actualiza cada 5 minutos"></span><span id="subtitulo">Cuenta compartida del equipo</span></p>
         </div>
       </div>
       <div class="controls">
@@ -156,26 +217,26 @@ footer b { color: #fff; font-weight: 600; }
   <main>
     <div class="kpis" id="kpis"></div>
 
-    <div class="card">
+    <div class="card anim" style="animation-delay:.25s">
       <h2>Costo equivalente diario por persona (USD)</h2>
       <div class="legend" id="legend"></div>
       <div id="chart"><div class="tip" id="tip"></div></div>
     </div>
 
-    <div class="card">
+    <div class="card anim" style="animation-delay:.35s">
       <h2>Ranking por máquina</h2>
       <div class="tbl-wrap"><table id="tRanking"></table></div>
       <p class="note">Escribe el nombre de la persona en cada máquina; se guarda al salir del campo. Máquinas con el mismo nombre se suman como una persona en el gráfico.</p>
     </div>
 
-    <div class="card">
+    <div class="card anim" style="animation-delay:.45s">
       <h2>Consumo por modelo</h2>
       <div class="tbl-wrap"><table id="tModelos"></table></div>
       <p class="note">El costo equivalente es lo que costaría ese consumo a precio de API (USD por millón de tokens, escritura de caché a 1,25× la entrada). Con suscripción no se cobra por token: sirve para comparar quién consume más de la cuota compartida.</p>
     </div>
   </main>
 
-  <footer><div><span><b>DLW Latam</b> · Uso interno</span><span>Datos: totales de tokens por máquina, sin prompts ni código</span></div></footer>
+  <footer><div><span><b>DLW Latam</b> · Uso interno</span><span><code class="mono">&gt;_</code> Monitoreo de Claude Code · solo totales de tokens, sin prompts ni código</span></div></footer>
 </div>
 
 <script>
@@ -263,7 +324,7 @@ async function todasLasFilas(path) {
 }
 
 // ---------- datos ----------
-let dias = 30, maquinas = [], consumo = [];
+let dias = 30, maquinas = [], consumo = [], animar = true;
 async function cargar() {
   $('#subtitulo').textContent = 'Cargando…';
   const filtro = dias ? `&dia=gte.${isoDia(new Date(Date.now() - (dias - 1) * 864e5))}` : '';
@@ -273,7 +334,7 @@ async function cargar() {
   ]);
   for (const r of consumo) r.costo = costo(r);
   $('#subtitulo').textContent = `Cuenta compartida del equipo · actualizado ${new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}`;
-  render();
+  animar = true; render();
 }
 const etiqueta = m => (m.persona && m.persona.trim()) || `${m.usuario_windows || '?'} @ ${m.hostname || '?'}`;
 
@@ -298,16 +359,34 @@ function render() {
   // KPIs
   const activas = ranking.filter(a => a.costo > 0).length;
   const top = personas[0];
-  $('#kpis').innerHTML = [
-    ['Costo equivalente', usd(total.costo), dias ? `últimos ${dias} días` : 'todo el historial'],
-    ['Tokens procesados', tok(total.tokens), 'entrada + salida + caché'],
-    ['Máquinas con consumo', `${activas} / ${maquinas.length}`, 'registradas en total'],
-    ['Mayor consumo', top ? esc(top[0]) : '—', top ? `${usd(top[1])} · ${pct(top[1] / (total.costo || 1))} del total` : ''],
-  ].map(([l, v, d]) => `<div class="kpi"><div class="lbl">${l}</div><div class="val${l === 'Mayor consumo' ? ' txt' : ''}">${v}</div><div class="det">${d}</div></div>`).join('');
+  const fmtMaq = n => `${Math.round(n)} / ${maquinas.length}`;
+  const kpis = [
+    ['Costo equivalente', total.costo, usd, dias ? `últimos ${dias} días` : 'todo el historial'],
+    ['Tokens procesados', total.tokens, tok, 'entrada + salida + caché'],
+    ['Máquinas con consumo', activas, fmtMaq, 'registradas en total'],
+    ['Mayor consumo', null, null, top ? `${usd(top[1])} · ${pct(top[1] / (total.costo || 1))} del total` : ''],
+  ];
+  const kEl = $('#kpis');
+  kEl.classList.toggle('animar', animar);
+  kEl.innerHTML = kpis.map(([l, v, f, d], i) => `<div class="kpi" style="animation-delay:${i * 80}ms"><div class="lbl">${l}</div><div class="val${f ? '' : ' txt'}">${f ? f(animar ? 0 : v) : (top ? esc(top[0]) : '—')}</div><div class="det">${d}</div></div>`).join('');
+  if (animar) kEl.querySelectorAll('.val').forEach((el, i) => { if (kpis[i][2]) contar(el, kpis[i][1], kpis[i][2]); });
 
   renderChart(personas.map(p => p[0]));
   renderRanking(ranking, total.costo);
   renderModelos();
+  animar = false;
+}
+
+// Cuenta ascendente para las cifras principales.
+function contar(el, hasta, fmt, ms = 1100) {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { el.textContent = fmt(hasta); return; }
+  const t0 = performance.now();
+  const paso = t => {
+    const p = Math.min(1, (t - t0) / ms), e = 1 - Math.pow(1 - p, 3);
+    el.textContent = fmt(hasta * e);
+    if (p < 1) requestAnimationFrame(paso);
+  };
+  requestAnimationFrame(paso);
 }
 
 function renderChart(personasOrden) {
@@ -332,18 +411,20 @@ function renderChart(personasOrden) {
   const paso = nice(maxV / 4), yMax = Math.ceil(maxV / paso) * paso;
   const y = v => m.t + (H - m.t - m.b) * (1 - v / yMax);
   const bw = (W - m.l - m.r) / listaDias.length, barW = Math.max(2, Math.min(28, bw * 0.7));
-  let svg = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Costo equivalente diario por persona">`;
+  let svg = `<svg class="${animar ? 'animar' : ''}" viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Costo equivalente diario por persona">`;
   for (let v = 0; v <= yMax + 1e-9; v += paso) svg += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/><text x="${m.l - 8}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${usd(v)}</text>`;
   const cadaN = Math.ceil(listaDias.length / Math.max(1, Math.floor((W - m.l) / 60)));
   listaDias.forEach((d, i) => {
     const x = m.l + i * bw + (bw - barW) / 2;
     let acc = 0;
+    svg += `<g class="bar-g" style="animation-delay:${Math.round(i * 600 / listaDias.length)}ms">`;
     for (const s of series) {
       const v = datos.get(d)[s]; if (v <= 0) continue;
       const y1 = y(acc + v), y0 = y(acc);
       svg += `<rect x="${x}" y="${y1}" width="${barW}" height="${Math.max(0, y0 - y1 - 1)}" fill="${color(s)}" rx="${barW > 6 ? 2 : 0}"/>`;
       acc += v;
     }
+    svg += '</g>';
     if (i % cadaN === 0) svg += `<text x="${x + barW / 2}" y="${H - 8}" text-anchor="middle" font-size="11" fill="var(--muted)">${d.slice(8)}/${d.slice(5, 7)}</text>`;
     svg += `<rect class="hit" data-d="${d}" x="${m.l + i * bw}" y="${m.t}" width="${bw}" height="${H - m.t - m.b}" fill="transparent"/>`;
   });
@@ -380,10 +461,10 @@ function estadoReporte(ts) {
 
 function renderRanking(ranking, totalCosto) {
   const maxC = ranking[0]?.costo || 1;
-  $('#tRanking').innerHTML = `<thead><tr><th>#</th><th>Persona</th><th>Equipo · usuario Windows</th><th class="n">Costo eq.</th><th class="n">% del total</th><th class="n">Salida</th><th class="n">Entrada + caché</th><th class="n">Mensajes</th><th>Modelo principal</th><th>Último reporte</th></tr></thead><tbody>` +
+  $('#tRanking').innerHTML = `<thead><tr><th>#</th><th>Persona</th><th>Equipo · usuario Windows</th><th class="n">Costo eq.</th><th class="n">% del total</th><th class="n">Salida</th><th class="n">Entrada + caché</th><th class="n">Mensajes</th><th>Modelo principal</th><th>Último reporte</th></tr></thead><tbody class="${animar ? 'animar' : ''}">` +
     ranking.map((a, i) => {
       const princ = [...a.modelos.entries()].sort((x, y) => y[1] - x[1])[0]?.[0] || '—';
-      return `<tr>
+      return `<tr style="animation-delay:${Math.min(i, 12) * 45}ms">
         <td><span class="pos">${i + 1}</span></td>
         <td><input class="persona" data-id="${esc(a.m.machine_id)}" value="${esc(a.m.persona || '')}" placeholder="Asignar nombre" aria-label="Persona de ${esc(a.m.hostname)}"></td>
         <td>${esc(a.m.hostname)} · ${esc(a.m.usuario_windows)}<div class="small">${esc(a.m.machine_id.slice(0, 8))}</div></td>
@@ -421,7 +502,43 @@ function renderModelos() {
 }
 
 // ---------- arranque ----------
-function mostrar(vista) { $('#vLogin').hidden = vista !== 'login'; $('#vDash').hidden = vista !== 'dash'; }
+function mostrar(vista) {
+  $('#vLogin').hidden = vista !== 'login'; $('#vDash').hidden = vista !== 'dash';
+  if (vista === 'login') terminal();
+}
+
+// Terminal ilustrativa de la pantalla de ingreso (se escribe sola, en bucle).
+let terminalActiva = false;
+function terminal() {
+  if (terminalActiva) return; terminalActiva = true;
+  const pre = $('#termTxt');
+  const guion = [
+    [['p', '$ '], ['w', 'claude']],
+    [['m', '  Claude Code · modelo claude-opus-5-5']],
+    [['p', '> '], ['', 'resume el consumo de tokens del equipo esta semana']],
+    [['c', '● '], ['', 'Leyendo registros de 7 máquinas…']],
+    [['ok', '✓ '], ['', '2.9 B tokens procesados · costo eq. '], ['w', '$1,442']],
+    [['ok', '✓ '], ['', 'Mayor consumo: VM-LDS-101 '], ['w', '(41%)']],
+    [['ok', '✓ '], ['', 'Modelo más usado: claude-opus-5-5']],
+  ];
+  const reducido = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const span = (cls, t) => cls ? `<span class="${cls}">${esc(t)}</span>` : esc(t);
+  const total = guion.map(l => l.map(([c, t]) => span(c, t)).join('')).join('\n');
+  if (reducido) { pre.innerHTML = total; return; }
+  let li = 0, si = 0, ci = 0, hecho = '';
+  const tick = () => {
+    if ($('#vLogin').hidden) { terminalActiva = false; return; }
+    if (li >= guion.length) { setTimeout(() => { li = si = ci = 0; hecho = ''; tick(); }, 4500); return; }
+    const linea = guion[li], [cls, txt] = linea[si];
+    ci++;
+    const parcial = linea.slice(0, si).map(([c, t]) => span(c, t)).join('') + span(cls, txt.slice(0, ci));
+    pre.innerHTML = hecho + parcial + '<span class="cursor"></span>';
+    if (ci >= txt.length) { si++; ci = 0; }
+    if (si >= linea.length) { hecho += linea.map(([c, t]) => span(c, t)).join('') + '\n'; li++; si = 0; return setTimeout(tick, li === 1 ? 500 : 380); }
+    setTimeout(tick, li === 2 || li === 0 ? 38 : 12);
+  };
+  tick();
+}
 function demo() {
   // Datos sintéticos para previsualizar (abrir dashboard.html#demo).
   const nombres = ['Ana Torres', 'Luis Rojas', null, 'Carla Díaz', 'Pedro Vega', 'Rosa Medina', null];
@@ -435,7 +552,7 @@ function demo() {
   }));
   if (dias) { const desde = isoDia(new Date(Date.now() - (dias - 1) * 864e5)); consumo = consumo.filter(r => r.dia >= desde); }
   for (const r of consumo) r.costo = costo(r);
-  mostrar('dash'); $('#subtitulo').textContent = 'MODO DEMO · datos sintéticos'; render();
+  mostrar('dash'); $('#subtitulo').textContent = 'MODO DEMO · datos sintéticos'; animar = true; render();
 }
 async function iniciar() {
   if (location.hash === '#demo') return demo();
