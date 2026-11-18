@@ -166,14 +166,25 @@ type estado struct {
 }
 
 func medir() (string, error) {
-	cuenta := cuentaClaude()
-	if !flags["dry-run"] && cuentaObjetivo != "" && cuenta != strings.ToLower(cuentaObjetivo) {
-		oculto := "sin sesión"
-		if cuenta != "" {
-			oculto = "***" + cuenta[strings.Index(cuenta, "@"):]
+	// Una PC puede tener varias carpetas de Claude Code (CLAUDE_CONFIG_DIR), cada una con su cuenta.
+	// Solo se suman las carpetas cuya sesión es la cuenta compartida.
+	perfiles := perfilesClaude()
+	var carpetas, resumen []string
+	for _, p := range perfiles {
+		coincide := p.cuenta == strings.ToLower(cuentaObjetivo)
+		resumen = append(resumen, fmt.Sprintf("%s=%s(%v)", filepath.Base(p.dir), ocultar(p.cuenta), coincide))
+		if coincide || flags["dry-run"] {
+			carpetas = append(carpetas, filepath.Join(p.dir, "projects"))
 		}
-		logf("Claude Code no usa la cuenta compartida (%s). No se envia nada.", oculto)
-		return fmt.Sprintf("Claude Code en esta máquina no está conectado con la cuenta compartida (%s).\nCuenta actual: %s\n\nNo se envió nada.", cuentaObjetivo, oculto), nil
+	}
+	logf("carpetas Claude: %s", strings.Join(resumen, " "))
+	if len(carpetas) == 0 {
+		msg := "Ninguna carpeta de Claude Code de esta máquina tiene la sesión de la cuenta compartida (" + cuentaObjetivo + ").\n\nCarpetas encontradas:\n"
+		for _, p := range perfiles {
+			msg += fmt.Sprintf("  %s → %s\n", filepath.Base(p.dir), ocultar(p.cuenta))
+		}
+		logf("Sin carpetas con la cuenta compartida. No se envia nada.")
+		return msg + "\nNo se envió nada.", nil
 	}
 
 	est := estado{}
@@ -190,7 +201,7 @@ func medir() (string, error) {
 	sum := sha256.Sum256([]byte(strings.ToLower(machineGUID() + "|" + host + "|" + usuario)))
 	id := hex.EncodeToString(sum[:])[:24]
 
-	archivos, filas := recolectar(desde)
+	archivos, filas := recolectar(desde, carpetas)
 	logf("maquina=%s usuario=%s id=%s archivos=%d filas=%d desde=%s", host, usuario, id, archivos, len(filas), valor(desde, "inicio"))
 
 	payload := map[string]any{"machine_id": id, "hostname": host, "usuario": usuario, "version": version, "filas": filas}
@@ -221,30 +232,60 @@ func medir() (string, error) {
 	return fmt.Sprintf("Consumo enviado correctamente.\n\nEquipo: %s · %s\nDías/modelos reportados: %d", host, usuario, len(filas)), nil
 }
 
-func carpetasClaude() []string {
+type perfil struct{ dir, cuenta string }
+
+// perfilesClaude busca carpetas de configuración de Claude Code en el perfil del usuario:
+// la por defecto (~/.claude, cuenta en ~/.claude.json) y cualquier otra carpeta con
+// "projects" y ".claude.json" (las creadas con CLAUDE_CONFIG_DIR, p. ej. ~/.claude-dlw).
+func perfilesClaude() []perfil {
 	casa, _ := os.UserHomeDir()
-	cands := []string{}
-	if d := os.Getenv("CLAUDE_CONFIG_DIR"); d != "" {
-		cands = append(cands, filepath.Join(d, "projects"))
-	}
-	cands = append(cands, filepath.Join(casa, ".claude", "projects"), filepath.Join(casa, ".config", "claude", "projects"))
-	vistos, out := map[string]bool{}, []string{}
-	for _, c := range cands {
-		if st, err := os.Stat(c); err == nil && st.IsDir() && !vistos[strings.ToLower(c)] {
-			vistos[strings.ToLower(c)] = true
-			out = append(out, c)
+	cands := []string{filepath.Join(casa, ".claude")}
+	if entradas, err := os.ReadDir(casa); err == nil {
+		for _, e := range entradas {
+			if e.IsDir() {
+				cands = append(cands, filepath.Join(casa, e.Name()))
+			}
 		}
+	}
+	cands = append(cands, filepath.Join(casa, ".config", "claude"))
+	if d := os.Getenv("CLAUDE_CONFIG_DIR"); d != "" {
+		cands = append(cands, d)
+	}
+	vistos, out := map[string]bool{}, []perfil{}
+	for _, d := range cands {
+		k := strings.ToLower(filepath.Clean(d))
+		if vistos[k] {
+			continue
+		}
+		vistos[k] = true
+		if st, err := os.Stat(filepath.Join(d, "projects")); err != nil || !st.IsDir() {
+			continue
+		}
+		rutas := []string{filepath.Join(d, ".claude.json")}
+		if strings.EqualFold(filepath.Clean(d), filepath.Join(casa, ".claude")) {
+			rutas = []string{filepath.Join(casa, ".claude.json"), filepath.Join(d, ".claude.json")}
+		} else if _, err := os.Stat(rutas[0]); err != nil {
+			continue // no es una carpeta de Claude Code
+		}
+		out = append(out, perfil{d, cuentaDe(rutas)})
 	}
 	return out
 }
 
-func cuentaClaude() string {
-	casa, _ := os.UserHomeDir()
-	rutas := []string{}
-	if d := os.Getenv("CLAUDE_CONFIG_DIR"); d != "" {
-		rutas = append(rutas, filepath.Join(d, ".claude.json"))
+func ocultar(cuenta string) string {
+	if cuenta == "" {
+		return "sin sesión"
 	}
-	rutas = append(rutas, filepath.Join(casa, ".claude.json"), filepath.Join(casa, ".claude", ".claude.json"))
+	if i := strings.Index(cuenta, "@"); i >= 0 {
+		if strings.EqualFold(cuenta, cuentaObjetivo) {
+			return cuenta
+		}
+		return "***" + cuenta[i:]
+	}
+	return "***"
+}
+
+func cuentaDe(rutas []string) string {
 	for _, r := range rutas {
 		b, err := os.ReadFile(r)
 		if err != nil {
@@ -286,14 +327,14 @@ type mensajeUso struct {
 	u           uso
 }
 
-func recolectar(desde string) (int, []fila) {
+func recolectar(desde string, carpetas []string) (int, []fila) {
 	var desdeT time.Time
 	if desde != "" {
 		desdeT, _ = time.ParseInLocation("2006-01-02", desde, time.Local)
 	}
 	archivos := 0
 	msgs := map[string]*mensajeUso{}
-	for _, raiz := range carpetasClaude() {
+	for _, raiz := range carpetas {
 		_ = filepath.WalkDir(raiz, func(p string, d fs.DirEntry, err error) error {
 			if err != nil || d.IsDir() || !strings.HasSuffix(p, ".jsonl") {
 				return nil

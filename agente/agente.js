@@ -54,11 +54,8 @@ function identidad() {
   return { machine_id, hostname, usuario };
 }
 
-// Correo de la cuenta con la que Claude Code tiene sesión iniciada (~/.claude.json > oauthAccount).
-function cuentaClaude() {
-  const rutas = [];
-  if (process.env.CLAUDE_CONFIG_DIR) rutas.push(path.join(process.env.CLAUDE_CONFIG_DIR, '.claude.json'));
-  rutas.push(path.join(os.homedir(), '.claude.json'), path.join(os.homedir(), '.claude', '.claude.json'));
+// Correo de la sesión guardada en un .claude.json (oauthAccount.emailAddress).
+function cuentaDe(rutas) {
   for (const r of rutas) {
     const j = leerJson(r, null);
     const email = j && j.oauthAccount && j.oauthAccount.emailAddress;
@@ -67,14 +64,32 @@ function cuentaClaude() {
   return '';
 }
 
-// ---------- Lectura de registros ----------
-function carpetasClaude() {
-  const dirs = new Set();
-  if (process.env.CLAUDE_CONFIG_DIR) dirs.add(path.join(process.env.CLAUDE_CONFIG_DIR, 'projects'));
-  dirs.add(path.join(os.homedir(), '.claude', 'projects'));
-  dirs.add(path.join(os.homedir(), '.config', 'claude', 'projects'));
-  return [...dirs].filter(d => { try { return fs.statSync(d).isDirectory(); } catch { return false; } });
+// Carpetas de configuración de Claude Code del usuario: la por defecto (~/.claude, cuenta en
+// ~/.claude.json) y cualquier otra con "projects" y ".claude.json" (creadas con CLAUDE_CONFIG_DIR).
+function perfilesClaude() {
+  const casa = os.homedir();
+  const def = path.join(casa, '.claude');
+  const cands = [def];
+  try { for (const e of fs.readdirSync(casa, { withFileTypes: true })) if (e.isDirectory()) cands.push(path.join(casa, e.name)); } catch { /* ignorar */ }
+  cands.push(path.join(casa, '.config', 'claude'));
+  if (process.env.CLAUDE_CONFIG_DIR) cands.push(process.env.CLAUDE_CONFIG_DIR);
+  const vistos = new Set(), out = [];
+  for (const d of cands) {
+    const k = path.resolve(d).toLowerCase();
+    if (vistos.has(k)) continue;
+    vistos.add(k);
+    try { if (!fs.statSync(path.join(d, 'projects')).isDirectory()) continue; } catch { continue; }
+    const esDef = k === path.resolve(def).toLowerCase();
+    if (!esDef && !fs.existsSync(path.join(d, '.claude.json'))) continue;
+    const rutas = esDef ? [path.join(casa, '.claude.json'), path.join(d, '.claude.json')] : [path.join(d, '.claude.json')];
+    out.push({ dir: d, cuenta: cuentaDe(rutas) });
+  }
+  return out;
 }
+
+const ocultar = (c, objetivo) => !c ? 'sin sesion' : c === objetivo ? c : '***' + c.slice(c.indexOf('@'));
+
+// ---------- Lectura de registros ----------
 
 function listarJsonl(dir, desdeMs, out) {
   let entradas;
@@ -94,9 +109,9 @@ function diaLocal(d) {
   return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`;
 }
 
-function recolectar(desdeDia) {
+function recolectar(desdeDia, carpetas) {
   const desdeMs = desdeDia ? new Date(`${desdeDia}T00:00:00`).getTime() : 0;
-  const archivos = carpetasClaude().flatMap(d => listarJsonl(d, desdeMs, []));
+  const archivos = carpetas.flatMap(d => listarJsonl(d, desdeMs, []));
   // Un mismo mensaje puede aparecer en varias líneas (y en archivos de subagentes):
   // se deduplica por message.id + requestId quedándose con el máximo de cada contador.
   const mensajes = new Map();
@@ -172,11 +187,14 @@ function main() {
     log('ERROR: falta configurar config.json (supabaseUrl y supabaseKey).');
     if (!DRY) process.exit(2);
   }
-  // Solo se mide la cuenta compartida de Claude Code: si la máquina usa otra cuenta, no se envía nada.
-  const cuenta = cuentaClaude();
+  // Una PC puede tener varias carpetas de Claude Code (CLAUDE_CONFIG_DIR), cada una con su cuenta.
+  // Solo se suman las carpetas cuya sesión es la cuenta compartida.
   const objetivo = ((cfg && cfg.cuentaClaude) || '').toLowerCase();
-  if (objetivo && cuenta !== objetivo) {
-    log(`Claude Code no usa la cuenta compartida en esta maquina (${cuenta ? cuenta.replace(/^[^@]*/, '***') : 'sin sesion'}). No se envia nada.`);
+  const perfiles = perfilesClaude();
+  log('carpetas Claude: ' + perfiles.map(p => `${path.basename(p.dir)}=${ocultar(p.cuenta, objetivo)}`).join(' '));
+  const carpetas = perfiles.filter(p => DRY || !objetivo || p.cuenta === objetivo).map(p => path.join(p.dir, 'projects'));
+  if (!carpetas.length) {
+    log(`Ninguna carpeta de Claude Code tiene la sesion de ${objetivo}. No se envia nada.`);
     return;
   }
 
@@ -186,7 +204,7 @@ function main() {
   const desde = completo ? null : diaLocal(new Date(Date.now() - (dias - 1) * 86400000));
 
   const id = identidad();
-  const { archivos, filas } = recolectar(desde);
+  const { archivos, filas } = recolectar(desde, carpetas);
   log(`maquina=${id.hostname} usuario=${id.usuario} id=${id.machine_id} archivos=${archivos} filas=${filas.length} desde=${desde || 'inicio'}`);
 
   if (DRY) {
