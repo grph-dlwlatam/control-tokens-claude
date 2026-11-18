@@ -3,88 +3,122 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Consumo Claude Code</title>
+<title>Consumo Claude Code · DLW</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+/* Identidad DLW Latam: azul marino #1e2c54, verde #89d021, Barlow */
 :root {
   color-scheme: light;
-  --bg: #f6f5f2; --surface: #fcfcfb; --border: #e3e2dd; --grid: #ecebe7;
-  --text: #0b0b0b; --text-2: #52514e; --muted: #7a7974;
-  --accent: #2a78d6; --input-bg: #ffffff;
-  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s-otros: #a8a7a1;
-  --good: #0ca30c; --warning: #b77900; --critical: #d03b3b;
+  --navy: #1e2c54; --lime: #89d021; --lime-strong: #70c500;
+  --bg: #f3f5f9; --surface: #ffffff; --border: #dfe4ee; --grid: #edf0f5;
+  --text: #1e2c54; --text-2: #4a5677; --muted: #7d8699;
+  --input-bg: #ffffff; --bar: #1e2c54;
+  --s1: #2a78d6; --s2: #6aa514; --s3: #6250d6; --s4: #eb6834; --s5: #009aab; --s-otros: #a3a9b6;
+  --good: #3d8a00; --warning: #b77900; --critical: #d03b3b;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --bg: #121211; --surface: #1a1a19; --border: #2e2e2c; --grid: #262624;
-    --text: #f0efec; --text-2: #c3c2b7; --muted: #8f8e88;
-    --accent: #3987e5; --input-bg: #222220;
-    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s-otros: #5f5e5a;
-    --good: #0ca30c; --warning: #fab219; --critical: #e66767;
+    --bg: #0f1730; --surface: #172242; --border: #26335c; --grid: #1f2b50;
+    --text: #f2f4f8; --text-2: #b9c2d8; --muted: #8590ab;
+    --input-bg: #121b38; --bar: #89d021;
+    --s1: #3987e5; --s2: #62a313; --s3: #9085e9; --s4: #d95926; --s5: #21a8b3; --s-otros: #5d6680;
+    --good: #89d021; --warning: #fab219; --critical: #e66767;
   }
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #121211; --surface: #1a1a19; --border: #2e2e2c; --grid: #262624;
-  --text: #f0efec; --text-2: #c3c2b7; --muted: #8f8e88;
-  --accent: #3987e5; --input-bg: #222220;
-  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s-otros: #5f5e5a;
-  --good: #0ca30c; --warning: #fab219; --critical: #e66767;
+  --bg: #0f1730; --surface: #172242; --border: #26335c; --grid: #1f2b50;
+  --text: #f2f4f8; --text-2: #b9c2d8; --muted: #8590ab;
+  --input-bg: #121b38; --bar: #89d021;
+  --s1: #3987e5; --s2: #62a313; --s3: #9085e9; --s4: #d95926; --s5: #21a8b3; --s-otros: #5d6680;
+  --good: #89d021; --warning: #fab219; --critical: #e66767;
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif; }
-main { max-width: 1200px; margin: 0 auto; padding: 24px 16px 48px; }
-h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
-h2 { font-size: 15px; margin: 0 0 12px; }
-.sub { color: var(--text-2); margin: 2px 0 0; }
-.top { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; justify-content: space-between; margin-bottom: 20px; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 'Barlow', Helvetica, Arial, sans-serif; }
+/* Cabecera institucional */
+.brand { background: var(--navy); color: #fff; border-bottom: 4px solid var(--lime); }
+.brand-in { max-width: 1240px; margin: 0 auto; padding: 14px 16px; display: flex; flex-wrap: wrap; gap: 14px 24px; align-items: center; justify-content: space-between; }
+.brand-id { display: flex; align-items: center; gap: 18px; min-width: 0; }
+.brand-id img { height: 34px; width: auto; display: block; }
+.brand-id .sep { width: 1px; height: 34px; background: rgba(255,255,255,.25); }
+.brand-id h1 { font-size: 20px; font-weight: 600; margin: 0; line-height: 1.15; }
+.brand-id p { margin: 2px 0 0; font-size: 13px; color: #b9c2d8; }
 .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface); }
-.seg button { border: 0; background: none; padding: 6px 12px; color: var(--text-2); cursor: pointer; font: inherit; }
-.seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
-.btn { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; padding: 6px 12px; cursor: pointer; font: inherit; }
-.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
-.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px; }
-.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
-.kpi .lbl { color: var(--text-2); font-size: 12px; }
-.kpi .val { font-size: 26px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
-.kpi .det { color: var(--muted); font-size: 12px; }
-.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0 0 8px; color: var(--text-2); font-size: 12px; }
+.seg { display: inline-flex; border: 2px solid var(--lime); border-radius: 6px; overflow: hidden; }
+.seg button { border: 0; background: none; padding: 5px 12px; color: #fff; cursor: pointer; font: 500 14px 'Barlow', sans-serif; }
+.seg button + button { border-left: 1px solid rgba(137,208,33,.4); }
+.seg button[aria-pressed="true"] { background: var(--lime); color: var(--navy); font-weight: 700; }
+.btn { border: 2px solid var(--lime); background: transparent; color: #fff; border-radius: 6px; padding: 5px 14px; cursor: pointer; font: 600 14px 'Barlow', sans-serif; transition: background-color .3s, color .3s; }
+.btn:hover, .seg button:hover:not([aria-pressed="true"]) { background: var(--lime); color: var(--navy); }
+.btn.primary { background: var(--lime); color: var(--navy); }
+.btn.primary:hover { background: var(--lime-strong); }
+main { max-width: 1240px; margin: 0 auto; padding: 24px 16px 40px; }
+/* Títulos de sección como el sitio: mayúsculas con subrayado verde */
+h2 { font-size: 14px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin: 0 0 14px; color: var(--text); }
+h2::after { content: ""; display: block; width: 36px; height: 3px; background: var(--lime); margin-top: 6px; border-radius: 2px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 18px 20px; margin-bottom: 18px; box-shadow: 0 1px 3px rgba(30,44,84,.06); }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 18px; }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--lime); border-radius: 6px; padding: 14px 18px; box-shadow: 0 1px 3px rgba(30,44,84,.06); }
+.kpi .lbl { color: var(--text-2); font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+.kpi .val { font-size: 30px; font-weight: 700; margin-top: 4px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.kpi .val.txt { font-size: 22px; }
+.kpi .det { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0 0 10px; color: var(--text-2); font-size: 13px; }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
 #chart { position: relative; }
 #chart svg { display: block; width: 100%; }
-.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.12); min-width: 180px; display: none; z-index: 2; }
+#chart svg text { font-family: 'Barlow', sans-serif; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--border); border-top: 3px solid var(--lime); border-radius: 6px; padding: 8px 10px; font-size: 13px; box-shadow: 0 6px 20px rgba(30,44,84,.18); min-width: 190px; display: none; z-index: 2; }
 .tip b { display: block; margin-bottom: 4px; }
 .tip div { display: flex; justify-content: space-between; gap: 12px; }
 .tip i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; margin-right: 6px; }
 .tbl-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
-th { color: var(--text-2); font-weight: 500; font-size: 12px; }
+th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+th { color: var(--text-2); font-weight: 700; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; border-bottom: 2px solid var(--border); }
+tbody tr:hover { background: rgba(137,208,33,.07); }
 td.n, th.n { text-align: right; }
-.persona { background: var(--input-bg); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 4px 8px; font: inherit; width: 170px; }
+.pos { display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center; border-radius: 50%; background: var(--grid); font-weight: 700; font-size: 12px; }
+tbody tr:first-child .pos { background: var(--lime); color: #1e2c54; }
+.persona { background: var(--input-bg); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 5px 8px; font: inherit; width: 150px; }
+.persona:focus { outline: 2px solid var(--lime); border-color: var(--lime); }
 .persona.saved { border-color: var(--good); }
 .share { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
 .share .bar { width: 80px; height: 6px; background: var(--grid); border-radius: 3px; overflow: hidden; }
-.share .bar i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+.share .bar i { display: block; height: 100%; background: var(--bar); border-radius: 3px; }
 .small { color: var(--muted); font-size: 12px; }
-.st { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; }
+.st { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 500; }
 .st.ok { color: var(--good); } .st.warn { color: var(--warning); } .st.bad { color: var(--critical); }
-.login { max-width: 360px; margin: 10vh auto; }
-.login label { display: block; font-size: 12px; color: var(--text-2); margin: 12px 0 4px; }
-.login input { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--input-bg); color: var(--text); font: inherit; }
-.err { color: var(--critical); margin-top: 10px; min-height: 1em; }
-.note { color: var(--muted); font-size: 12px; margin-top: 8px; }
+.note { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
+/* Login */
+.login-wrap { min-height: 100vh; display: grid; place-items: center; padding: 16px; background: var(--navy); }
+.login { width: 100%; max-width: 380px; background: var(--surface); border-radius: 6px; border-top: 4px solid var(--lime); padding: 28px; box-shadow: 0 10px 40px rgba(0,0,0,.3); }
+.login .logo { background: var(--navy); margin: -28px -28px 20px; padding: 20px 28px; }
+.login .logo img { height: 34px; display: block; }
+.login h1 { font-size: 20px; margin: 0; }
+.login label { display: block; font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--text-2); margin: 14px 0 4px; }
+.login input { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg); color: var(--text); font: inherit; }
+.login input:focus { outline: 2px solid var(--lime); border-color: var(--lime); }
+.login .btn { width: 100%; margin-top: 14px; padding: 9px; font-size: 15px; }
+.err { color: var(--critical); margin-top: 10px; min-height: 1em; font-size: 14px; }
+.sub { color: var(--text-2); margin: 4px 0 0; }
+footer { background: var(--navy); color: #b9c2d8; font-size: 13px; }
+footer div { max-width: 1240px; margin: 0 auto; padding: 14px 16px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+footer b { color: #fff; font-weight: 600; }
 [hidden] { display: none !important; }
+@media (max-width: 640px) { .brand-id .sep, .brand-id p { display: none; } .brand-id h1 { font-size: 17px; } .kpi .val { font-size: 26px; } }
 </style>
 </head>
 <body>
-<main>
-  <!-- ========= Login ========= -->
-  <section id="vLogin" class="card login" hidden>
-    <h1>Consumo Claude Code</h1>
+<!-- ========= Login ========= -->
+<section id="vLogin" class="login-wrap" hidden>
+  <div class="login">
+    <div class="logo"><img src="delaware-logo-blanco.png" alt="DLW Latam"></div>
+    <h1>Control de consumo · Claude Code</h1>
     <p class="sub">Ingresa con tu usuario del panel.</p>
     <form id="fLogin">
       <label for="email">Correo</label>
@@ -92,26 +126,34 @@ td.n, th.n { text-align: right; }
       <label for="pass">Contraseña</label>
       <input id="pass" type="password" autocomplete="current-password" required>
       <div class="err" id="loginErr"></div>
-      <button class="btn primary" style="margin-top:8px;width:100%">Ingresar</button>
+      <button class="btn primary">Ingresar</button>
     </form>
-  </section>
+  </div>
+</section>
 
-  <!-- ========= Dashboard ========= -->
-  <section id="vDash" hidden>
-    <div class="top">
-      <div>
-        <h1>Consumo de Claude Code por máquina</h1>
-        <p class="sub" id="subtitulo">Cuenta compartida del equipo</p>
+<!-- ========= Dashboard ========= -->
+<div id="vDash" hidden>
+  <header class="brand">
+    <div class="brand-in">
+      <div class="brand-id">
+        <img src="delaware-logo-blanco.png" alt="DLW Latam">
+        <span class="sep"></span>
+        <div>
+          <h1>Control de consumo · Claude Code</h1>
+          <p id="subtitulo">Cuenta compartida del equipo</p>
+        </div>
       </div>
       <div class="controls">
-        <div class="seg" id="rango" role="group" aria-label="Rango">
+        <div class="seg" id="rango" role="group" aria-label="Rango de fechas">
           <button data-d="7">7 días</button><button data-d="30" aria-pressed="true">30 días</button><button data-d="90">90 días</button><button data-d="0">Todo</button>
         </div>
         <button class="btn" id="bRefrescar">Actualizar</button>
         <button class="btn" id="bSalir">Salir</button>
       </div>
     </div>
+  </header>
 
+  <main>
     <div class="kpis" id="kpis"></div>
 
     <div class="card">
@@ -127,12 +169,14 @@ td.n, th.n { text-align: right; }
     </div>
 
     <div class="card">
-      <h2>Por modelo</h2>
+      <h2>Consumo por modelo</h2>
       <div class="tbl-wrap"><table id="tModelos"></table></div>
       <p class="note">El costo equivalente es lo que costaría ese consumo a precio de API (USD por millón de tokens, escritura de caché a 1,25× la entrada). Con suscripción no se cobra por token: sirve para comparar quién consume más de la cuota compartida.</p>
     </div>
-  </section>
-</main>
+  </main>
+
+  <footer><div><span><b>DLW Latam</b> · Uso interno</span><span>Datos: totales de tokens por máquina, sin prompts ni código</span></div></footer>
+</div>
 
 <script>
 // ===================== CONFIGURACIÓN =====================
@@ -259,7 +303,7 @@ function render() {
     ['Tokens procesados', tok(total.tokens), 'entrada + salida + caché'],
     ['Máquinas con consumo', `${activas} / ${maquinas.length}`, 'registradas en total'],
     ['Mayor consumo', top ? esc(top[0]) : '—', top ? `${usd(top[1])} · ${pct(top[1] / (total.costo || 1))} del total` : ''],
-  ].map(([l, v, d]) => `<div class="kpi"><div class="lbl">${l}</div><div class="val" ${l === 'Mayor consumo' ? 'style="font-size:20px"' : ''}>${v}</div><div class="det">${d}</div></div>`).join('');
+  ].map(([l, v, d]) => `<div class="kpi"><div class="lbl">${l}</div><div class="val${l === 'Mayor consumo' ? ' txt' : ''}">${v}</div><div class="det">${d}</div></div>`).join('');
 
   renderChart(personas.map(p => p[0]));
   renderRanking(ranking, total.costo);
@@ -340,7 +384,7 @@ function renderRanking(ranking, totalCosto) {
     ranking.map((a, i) => {
       const princ = [...a.modelos.entries()].sort((x, y) => y[1] - x[1])[0]?.[0] || '—';
       return `<tr>
-        <td>${i + 1}</td>
+        <td><span class="pos">${i + 1}</span></td>
         <td><input class="persona" data-id="${esc(a.m.machine_id)}" value="${esc(a.m.persona || '')}" placeholder="Asignar nombre" aria-label="Persona de ${esc(a.m.hostname)}"></td>
         <td>${esc(a.m.hostname)} · ${esc(a.m.usuario_windows)}<div class="small">${esc(a.m.machine_id.slice(0, 8))}</div></td>
         <td class="n"><b>${usd(a.costo)}</b></td>
