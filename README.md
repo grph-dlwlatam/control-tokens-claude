@@ -55,7 +55,7 @@ go build -trimpath -ldflags "-H windowsgui -s -w" -o ../dist/GestorTokens.exe .
 
 ## Miembros, cuadre y sesiones (migración 02)
 
-Ejecutar una vez [supabase/02-sesiones.sql](supabase/02-sesiones.sql) en el SQL Editor (después de `esquema.sql`).
+Ejecutar una vez, en orden, en el SQL Editor (después de `esquema.sql`): [supabase/02-sesiones.sql](supabase/02-sesiones.sql) y [supabase/03-ajustes.sql](supabase/03-ajustes.sql).
 
 - **Miembros:** cada persona es única y puede tener varias máquinas. La líder crea los miembros en el dashboard y asigna cada máquina a uno.
 - **Cuadre:** el dashboard alerta cuando lo gastado no coincide con lo asignado. Avisa de:

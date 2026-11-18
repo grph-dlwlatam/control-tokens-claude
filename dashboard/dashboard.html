@@ -168,6 +168,35 @@ select:focus, .fila-form input:focus { outline: 2px solid var(--lime); border-co
 td.tit { white-space: normal; min-width: 220px; max-width: 340px; }
 td.tit .small { word-break: break-all; }
 
+/* Enlaces, ajustes y ficha */
+.link-m { background: none; border: 0; padding: 0; font: 700 15px 'Barlow', sans-serif; color: var(--text); cursor: pointer; border-bottom: 2px solid var(--lime); }
+.link-m:hover { color: var(--s1); }
+.link-s { background: none; border: 0; padding: 0; font: 600 12px 'Barlow', sans-serif; color: var(--s1); cursor: pointer; text-decoration: underline; }
+.ok-trab { color: var(--good); font-weight: 600; }
+.chip .x { background: none; border: 0; cursor: pointer; color: var(--muted); font-weight: 700; padding: 0 0 0 4px; }
+#fSesBuscar { flex: 1 1 220px; background: var(--input-bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font: inherit; }
+.ajustes summary { cursor: pointer; list-style: none; }
+.ajustes summary::-webkit-details-marker { display: none; }
+.ajustes summary h2 { display: inline-block; margin-bottom: 0; }
+.ajustes summary::after { content: " ▾"; color: var(--muted); }
+.ajustes[open] summary { margin-bottom: 14px; }
+.lbl-a { display: block; font-weight: 600; margin: 12px 0 6px; }
+.ajustes textarea { width: 100%; background: var(--input-bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 8px; font: 14px 'Barlow', sans-serif; resize: vertical; }
+dialog#ficha { width: min(920px, calc(100vw - 32px)); max-height: calc(100vh - 48px); border: 1px solid var(--border); border-top: 4px solid var(--lime); border-radius: 8px; padding: 22px 24px; background: var(--surface); color: var(--text); box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+dialog#ficha::backdrop { background: rgba(15,23,48,.55); backdrop-filter: blur(2px); }
+dialog#ficha[open] { animation: up .35s cubic-bezier(.2,.7,.2,1); }
+.ficha-cab { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.ficha-cab h3 { margin: 2px 0 0; font-size: 24px; }
+.ficha-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 16px 0 6px; }
+.ficha-kpis div { border: 1px solid var(--border); border-left: 4px solid var(--lime); border-radius: 6px; padding: 10px 12px; }
+.ficha-kpis span { display: block; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-2); }
+.ficha-kpis b { font-size: 22px; display: block; }
+.ficha-kpis b.rojo { color: var(--critical); }
+.ficha-kpis small { color: var(--muted); }
+#ficha h4 { margin: 16px 0 6px; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-2); }
+.ficha-svg { width: 100%; height: auto; display: block; }
+.ficha-maq { padding: 4px 0; border-bottom: 1px solid var(--grid); }
+
 /* Animaciones */
 @keyframes up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 .anim { animation: up .65s cubic-bezier(.2,.7,.2,1) both; }
@@ -282,11 +311,21 @@ tbody.animar tr { animation: rowin .45s ease both; }
           <button data-f="banderas" aria-pressed="true">Con banderas</button><button data-f="pendientes">Pendientes</button><button data-f="personal">Personales</button><button data-f="todas">Todas</button>
         </div>
         <select id="fSesMiembro" aria-label="Filtrar por miembro"></select>
+        <input id="fSesBuscar" type="search" placeholder="Buscar título, carpeta o miembro…" aria-label="Buscar sesiones">
         <span class="small" id="sesResumen"></span>
       </div>
       <div class="tbl-wrap"><table id="tSesiones"></table></div>
       <p class="note">El título lo genera Claude Code automáticamente para cada conversación; no se guardan prompts ni código. Banderas: horario fuera de L–V 8:00–19:00, sesión sin carpeta de proyecto (Escritorio, Descargas, carpeta de usuario) y costo muy superior a lo habitual.</p>
     </div>
+
+    <details class="card anim ajustes" id="secAjustes" style="animation-delay:.42s">
+      <summary><h2>Ajustes de detección</h2></summary>
+      <label for="aPalabras" class="lbl-a">Palabras clave de uso personal <span class="small">(separadas por coma; sin tildes da igual)</span></label>
+      <textarea id="aPalabras" rows="3"></textarea>
+      <div class="fila-form"><button class="btn-s primary" id="aGuardar">Guardar palabras</button><span class="small" id="aEstado"></span></div>
+      <label class="lbl-a">Carpetas de trabajo conocidas <span class="small">(sus sesiones no levantan banderas de carpeta ni de horario)</span></label>
+      <div id="aCarpetas"></div>
+    </details>
 
     <div class="card anim" style="animation-delay:.45s">
       <h2>Consumo por modelo</h2>
@@ -294,6 +333,8 @@ tbody.animar tr { animation: rowin .45s ease both; }
       <p class="note">El costo equivalente es lo que costaría ese consumo a precio de API (USD por millón de tokens, escritura de caché a 1,25× la entrada). Con suscripción no se cobra por token: sirve para comparar quién consume más de la cuota compartida.</p>
     </div>
   </main>
+
+  <dialog id="ficha" aria-label="Ficha del miembro"><div id="fichaCont"></div></dialog>
 
   <footer><div><span><b>DLW Latam</b> · Uso interno</span><span><code class="mono">&gt;_</code> Monitoreo de Claude Code · solo totales de tokens, sin prompts ni código</span></div></footer>
 </div>
@@ -385,22 +426,32 @@ async function todasLasFilas(path) {
 // ---------- datos ----------
 // Horario laboral para las banderas de sesión (hora local del navegador).
 const HORARIO = { desde: 8, hasta: 19, dias: [1, 2, 3, 4, 5] };
-let dias = 30, maquinas = [], consumo = [], miembros = [], sesiones = [], animar = true, avisoMigracion = false;
-let filtroSes = 'banderas', filtroMiembro = '';
+// Valores por defecto de los ajustes (se guardan en la tabla "ajustes" de Supabase).
+const AJUSTES_DEF = {
+  palabras_personales: ['viaje', 'vacaciones', 'hotel', 'vuelo', 'cv', 'curriculum', 'carta de presentacion', 'universidad', 'tarea', 'examen', 'tesis', 'colegio', 'serie', 'pelicula', 'netflix', 'receta', 'dieta', 'gimnasio', 'cumpleanos', 'regalo', 'boda', 'juego', 'videojuego', 'apuesta', 'bitcoin', 'cripto', 'horoscopo', 'futbol', 'travel', 'vacation', 'resume', 'homework', 'recipe', 'movie'],
+  carpetas_trabajo: [],
+};
+let dias = 30, maquinas = [], consumo = [], miembros = [], sesiones = [], animar = true;
+let ajustes = structuredClone(AJUSTES_DEF), faltan = new Set();
+let filtroSes = 'banderas', filtroMiembro = '', busqueda = '';
 
-async function opcional(path) {
-  try { return await todasLasFilas(path); } catch (e) { avisoMigracion = true; console.warn(e.message); return []; }
+async function opcional(path, migracion) {
+  try { return await todasLasFilas(path); } catch (e) { faltan.add(migracion); console.warn(e.message); return []; }
 }
 async function cargar() {
   $('#subtitulo').textContent = 'Cargando…';
   const desde = dias ? isoDia(new Date(Date.now() - (dias - 1) * 864e5)) : '';
-  avisoMigracion = false;
-  [maquinas, consumo, miembros, sesiones] = await Promise.all([
+  faltan = new Set();
+  let filasAjustes;
+  [maquinas, consumo, miembros, sesiones, filasAjustes] = await Promise.all([
     todasLasFilas('maquinas?select=*&order=machine_id'),
     todasLasFilas(`consumo_diario?select=machine_id,dia,modelo,input_tokens,output_tokens,cache_creation_tokens,cache_read_tokens,mensajes${desde ? '&dia=gte.' + desde : ''}&order=dia,machine_id,modelo`),
-    opcional('miembros?select=*&order=nombre'),
-    opcional(`sesiones?select=machine_id,session_id,inicio,fin,titulo,carpeta,entrypoint,por_modelo,mensajes,mensajes_subagente,revision,revisado_por${desde ? '&inicio=gte.' + desde : ''}&order=inicio.desc`),
+    opcional('miembros?select=*&order=nombre', '02-sesiones.sql'),
+    opcional(`sesiones?select=machine_id,session_id,inicio,fin,titulo,carpeta,entrypoint,por_modelo,mensajes,mensajes_subagente,revision,revisado_por${desde ? '&inicio=gte.' + desde : ''}&order=inicio.desc`, '02-sesiones.sql'),
+    opcional('ajustes?select=clave,valor', '03-ajustes.sql'),
   ]);
+  ajustes = structuredClone(AJUSTES_DEF);
+  for (const f of filasAjustes) if (f.clave in ajustes && Array.isArray(f.valor)) ajustes[f.clave] = f.valor;
   prepararDatos();
   $('#subtitulo').textContent = `Cuenta compartida del equipo · actualizado ${new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}`;
   animar = true; render();
@@ -410,28 +461,48 @@ function prepararDatos() {
   for (const s of sesiones) {
     s.costo = Object.entries(s.por_modelo || {}).reduce((a, [mo, u]) => a + costo({ modelo: mo, input_tokens: u.input || 0, output_tokens: u.output || 0, cache_creation_tokens: u.cache_creation || 0, cache_read_tokens: u.cache_read || 0 }), 0);
   }
+  recalcularBanderas();
+}
+function recalcularBanderas() {
   const costos = sesiones.map(s => s.costo).sort((a, b) => a - b);
   const mediana = costos.length ? costos[Math.floor(costos.length / 2)] : 0;
-  for (const s of sesiones) s.banderas = banderas(s, mediana);
+  const palabras = ajustes.palabras_personales.map(normalizar).filter(Boolean)
+    .map(p => [p, new RegExp(`(^|[^a-z0-9])${p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^a-z0-9]|$)`)]);
+  for (const s of sesiones) s.banderas = banderas(s, mediana, palabras);
 }
 
 const miembroDe = m => m && m.miembro_id ? miembros.find(x => x.id === m.miembro_id) : null;
 const etiqueta = m => miembroDe(m)?.nombre || 'Sin asignar';
 const maquinaDe = id => maquinas.find(m => m.machine_id === id);
+const normalizar = t => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+const normCarpeta = c => String(c || '').toLowerCase().replace(/\//g, '\\').replace(/\\+$/, '');
+const esCarpetaTrabajo = c => { const n = normCarpeta(c); return !!n && ajustes.carpetas_trabajo.some(t => { const k = normCarpeta(t); return n === k || n.startsWith(k + '\\'); }); };
 
 // Banderas de posible uso personal (no prueban nada: la líder revisa el título y decide).
-function banderas(s, mediana) {
+function banderas(s, mediana, palabras) {
   const out = [];
+  const titulo = normalizar(s.titulo);
+  const hit = palabras.find(([, re]) => re.test(titulo));
+  if (hit) out.push(['c', `Título no laboral: ${hit[0]}`]);
+  const deTrabajo = esCarpetaTrabajo(s.carpeta);
   const ini = s.inicio ? new Date(s.inicio) : null;
-  if (ini) {
+  if (ini && !deTrabajo) {
     if (!HORARIO.dias.includes(ini.getDay())) out.push(['h', 'Fin de semana']);
     else if (ini.getHours() < HORARIO.desde || ini.getHours() >= HORARIO.hasta) out.push(['h', 'Fuera de horario']);
   }
-  const c = (s.carpeta || '').toLowerCase().replace(/\//g, '\\');
+  const c = normCarpeta(s.carpeta);
   const sinProyecto = !c || c === '~' || /^~\\(onedrive[^\\]*\\)?(desktop|escritorio|downloads|descargas)(\\|$)/.test(c) || /\\(temp|tmp)(\\|$)/.test(c);
-  if (sinProyecto) out.push(['c', 'Sin carpeta de proyecto']);
+  if (sinProyecto && !deTrabajo) out.push(['c', 'Sin carpeta de proyecto']);
   if (s.costo > 5 && s.costo > mediana * 4) out.push(['x', 'Costo alto']);
   return out;
+}
+
+async function guardarAjuste(clave, valor) {
+  ajustes[clave] = valor;
+  if (!esDemo()) {
+    await api('ajustes?on_conflict=clave', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ clave, valor, actualizado: new Date().toISOString() }) });
+  }
+  recalcularBanderas(); render();
 }
 
 // ---------- render ----------
@@ -493,7 +564,7 @@ function render() {
 function renderAlertas(totalCosto, mapeado, sinAsignar, equipo) {
   const al = [];
   const huerfano = totalCosto - mapeado;
-  if (avisoMigracion) al.push(['warn', '!', 'Falta ejecutar la migración 02 en Supabase', 'Sin ella no se ven miembros ni sesiones. Ejecuta supabase/02-sesiones.sql en el SQL Editor.']);
+  if (faltan.size) al.push(['warn', '!', 'Falta ejecutar en Supabase: ' + [...faltan].join(', '), 'Ábrelo en el SQL Editor y pulsa Run. Mientras tanto se usan valores por defecto.']);
   if (totalCosto > 0 && huerfano > 0.005) {
     const conConsumo = sinAsignar.filter(a => a.costo > 0);
     const nivel = huerfano / totalCosto > 0.05 ? 'bad' : 'warn';
@@ -601,7 +672,7 @@ function renderEquipo(equipo, totalCosto) {
   $('#tEquipo').innerHTML = `<thead><tr><th>#</th><th>Miembro</th><th>Máquinas</th><th class="n">Costo eq.</th><th class="n">% del total</th><th class="n">Uso personal</th><th>Último reporte</th><th></th></tr></thead><tbody class="${animar ? 'animar' : ''}">` +
     (equipo.length ? equipo.map((g, i) => `<tr style="animation-delay:${Math.min(i, 12) * 45}ms">
         <td><span class="pos">${i + 1}</span></td>
-        <td><b>${esc(g.mb.nombre)}</b>${g.mb.correo ? `<div class="small">${esc(g.mb.correo)}</div>` : ''}</td>
+        <td><button class="link-m" data-ficha="${esc(g.mb.id)}" title="Ver ficha de ${esc(g.mb.nombre)}">${esc(g.mb.nombre)}</button>${g.mb.correo ? `<div class="small">${esc(g.mb.correo)}</div>` : ''}</td>
         <td>${g.maquinas.map(m => `<span class="chip">${esc(m.hostname)}</span>`).join('') || '<span class="small">ninguna</span>'}</td>
         <td class="n"><b>${usd(g.costo)}</b></td>
         <td class="n"><div class="share">${pct(g.costo / (totalCosto || 1))}<span class="bar"><i style="width:${(g.costo / maxC * 100).toFixed(1)}%"></i></span></div></td>
@@ -615,11 +686,21 @@ function renderEquipo(equipo, totalCosto) {
     if (esDemo()) { miembros = miembros.filter(x => x.id !== mb.id); maquinas.forEach(m => { if (m.miembro_id === mb.id) m.miembro_id = null; }); return render(); }
     try { await api(`miembros?id=eq.${encodeURIComponent(mb.id)}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); await cargar(); } catch (e) { alert('No se pudo eliminar: ' + e.message); }
   }));
+  document.querySelectorAll('[data-ficha]').forEach(b => b.addEventListener('click', () => abrirFicha(b.dataset.ficha)));
+}
+
+// Crea un miembro y devuelve su id.
+async function crearMiembro(nombre, correo = null) {
+  if (esDemo()) { const mb = { id: 'm' + Date.now(), nombre, correo, activo: true }; miembros.push(mb); return mb.id; }
+  const r = await api('miembros', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ nombre, correo }) });
+  const [mb] = await r.json();
+  miembros.push(mb);
+  return mb.id;
 }
 
 function renderRanking(ranking, totalCosto) {
   const maxC = ranking[0]?.costo || 1;
-  const opciones = id => `<option value="">— Sin asignar —</option>` + miembros.map(mb => `<option value="${esc(mb.id)}"${mb.id === id ? ' selected' : ''}>${esc(mb.nombre)}</option>`).join('');
+  const opciones = id => `<option value="">— Sin asignar —</option>` + miembros.map(mb => `<option value="${esc(mb.id)}"${mb.id === id ? ' selected' : ''}>${esc(mb.nombre)}</option>`).join('') + '<option value="__nuevo">+ Nuevo miembro…</option>';
   $('#tRanking').innerHTML = `<thead><tr><th>#</th><th>Miembro</th><th>Equipo · usuario Windows</th><th class="n">Costo eq.</th><th class="n">% del total</th><th class="n">Salida</th><th class="n">Entrada + caché</th><th class="n">Mensajes</th><th>Modelo principal</th><th>Último reporte</th></tr></thead><tbody class="${animar ? 'animar' : ''}">` +
     ranking.map((a, i) => {
       const princ = [...a.modelos.entries()].sort((x, y) => y[1] - x[1])[0]?.[0] || '—';
@@ -637,8 +718,15 @@ function renderRanking(ranking, totalCosto) {
       </tr>`;
     }).join('') + '</tbody>';
   document.querySelectorAll('.asignar').forEach(sel => sel.addEventListener('change', async () => {
-    const m = maquinaDe(sel.dataset.id), valor = sel.value || null;
+    const m = maquinaDe(sel.dataset.id);
+    let valor = sel.value || null;
     try {
+      if (valor === '__nuevo') {
+        const sugerido = (m.usuario_windows || '').replace(/_dw$/i, '').replace(/[._-]+/g, ' ');
+        const nombre = (prompt(`Nombre del miembro para ${m.hostname}:`, sugerido) || '').trim();
+        if (!nombre) { sel.value = m.miembro_id || ''; return; }
+        valor = await crearMiembro(nombre);
+      }
       if (!esDemo()) await api(`maquinas?machine_id=eq.${encodeURIComponent(m.machine_id)}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ miembro_id: valor }) });
       m.miembro_id = valor; render();
     } catch (e) { alert('No se pudo guardar: ' + e.message); }
@@ -652,6 +740,7 @@ function renderSesiones() {
   const lista = sesiones.filter(s => {
     const mid = maquinaDe(s.machine_id)?.miembro_id || '';
     if (filtroMiembro === '__sin' ? mid : (filtroMiembro && mid !== filtroMiembro)) return false;
+    if (busqueda && !normalizar(`${s.titulo} ${s.carpeta} ${etiqueta(maquinaDe(s.machine_id))}`).includes(busqueda)) return false;
     if (filtroSes === 'banderas') return s.banderas.length && !s.revision;
     if (filtroSes === 'pendientes') return !s.revision;
     if (filtroSes === 'personal') return s.revision === 'personal';
@@ -668,7 +757,7 @@ function renderSesiones() {
       return `<tr>
         <td>${fh(s.inicio)}</td>
         <td>${esc(etiqueta(m))}<div class="small">${esc(m?.hostname || '')}</div></td>
-        <td class="tit"><b>${esc(s.titulo || '(sin título)')}</b><div class="small">${esc(s.carpeta || '—')}${s.mensajes_subagente ? ` · ${Math.round(s.mensajes_subagente / s.mensajes * 100)}% subagentes` : ''}</div></td>
+        <td class="tit"><b>${esc(s.titulo || '(sin título)')}</b><div class="small">${esc(s.carpeta || '—')}${s.mensajes_subagente ? ` · ${Math.round(s.mensajes_subagente / s.mensajes * 100)}% subagentes` : ''}${s.carpeta && s.carpeta !== '~' ? (esCarpetaTrabajo(s.carpeta) ? ' · <span class="ok-trab">✓ carpeta de trabajo</span>' : ` · <button class="link-s" data-carpeta="${esc(s.carpeta)}" title="No volver a marcar banderas de carpeta ni de horario en esta carpeta">marcar carpeta como de trabajo</button>`) : ''}</div></td>
         <td class="n">${dur(s)}</td>
         <td class="n"><b>${usd(s.costo)}</b></td>
         <td>${s.banderas.map(([c, t]) => `<span class="flag ${c}">${t}</span>`).join('') || '<span class="small">—</span>'}</td>
@@ -685,6 +774,65 @@ function renderSesiones() {
       s.revision = nueva; s.revisado_por = nueva ? quien : null; render();
     } catch (e) { alert('No se pudo guardar: ' + e.message); }
   }));
+  document.querySelectorAll('[data-carpeta]').forEach(b => b.addEventListener('click', async () => {
+    const c = b.dataset.carpeta;
+    if (!confirm(`¿Marcar "${c}" (y sus subcarpetas) como carpeta de trabajo?\nSus sesiones dejarán de levantar banderas de carpeta y de horario.`)) return;
+    try { await guardarAjuste('carpetas_trabajo', [...new Set([...ajustes.carpetas_trabajo, c])]); } catch (e) { alert('No se pudo guardar: ' + e.message); }
+  }));
+  renderAjustes();
+}
+
+// ---------- ajustes: palabras clave y carpetas de trabajo ----------
+function renderAjustes() {
+  const ta = $('#aPalabras');
+  if (document.activeElement !== ta) ta.value = ajustes.palabras_personales.join(', ');
+  $('#aCarpetas').innerHTML = ajustes.carpetas_trabajo.length
+    ? ajustes.carpetas_trabajo.map((c, i) => `<span class="chip">${esc(c)} <button class="x" data-quitar="${i}" aria-label="Quitar ${esc(c)}">×</button></span>`).join('')
+    : '<span class="small">Ninguna todavía. Márcalas desde la tabla de sesiones.</span>';
+  document.querySelectorAll('[data-quitar]').forEach(b => b.addEventListener('click', async () => {
+    const lista = ajustes.carpetas_trabajo.filter((_, i) => i !== +b.dataset.quitar);
+    try { await guardarAjuste('carpetas_trabajo', lista); } catch (e) { alert('No se pudo guardar: ' + e.message); }
+  }));
+}
+
+// ---------- ficha por miembro ----------
+function abrirFicha(id) {
+  const mb = miembros.find(x => x.id === id); if (!mb) return;
+  const maqs = maquinas.filter(m => m.miembro_id === id), ids = new Set(maqs.map(m => m.machine_id));
+  const filas = consumo.filter(r => ids.has(r.machine_id)), ses = sesiones.filter(s => ids.has(s.machine_id));
+  const totalEq = consumo.reduce((x, r) => x + r.costo, 0), costoM = filas.reduce((x, r) => x + r.costo, 0);
+  const personal = ses.filter(s => s.revision === 'personal'), conBand = ses.filter(s => s.banderas.length && !s.revision);
+  // Tendencia diaria
+  const hoy = new Date(); hoy.setHours(12);
+  const ini = dias ? new Date(hoy.getTime() - (dias - 1) * 864e5) : (filas.length ? new Date(filas[0].dia + 'T12:00:00') : hoy);
+  const listaDias = []; for (let d = new Date(ini); d <= hoy; d = new Date(d.getTime() + 864e5)) listaDias.push(isoDia(d));
+  const porDia = new Map(listaDias.map(d => [d, 0])); for (const r of filas) if (porDia.has(r.dia)) porDia.set(r.dia, porDia.get(r.dia) + r.costo);
+  const W = 640, H = 120, maxV = Math.max(0.01, ...porDia.values()), bw = W / listaDias.length;
+  const barras = listaDias.map((d, i) => { const v = porDia.get(d), h = v / maxV * (H - 18); return `<rect x="${i * bw + bw * 0.15}" y="${H - 14 - h}" width="${bw * 0.7}" height="${h}" rx="2" fill="var(--s1)"><title>${d}: ${usd(v)}</title></rect>`; }).join('');
+  const fh = d => new Date(d).toLocaleString('es-PE', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  const top = [...ses].sort((a, b) => b.costo - a.costo).slice(0, 15);
+  $('#fichaCont').innerHTML = `
+    <div class="ficha-cab"><div><span class="eyebrow">Ficha del miembro</span><h3>${esc(mb.nombre)}</h3>${mb.correo ? `<div class="small">${esc(mb.correo)}</div>` : ''}</div>
+      <button class="btn-s" id="fichaCerrar" aria-label="Cerrar">Cerrar ✕</button></div>
+    <div class="ficha-kpis">
+      <div><span>Costo eq.</span><b>${usd(costoM)}</b><small>${pct(costoM / (totalEq || 1))} del equipo</small></div>
+      <div><span>Sesiones</span><b>${ses.length}</b><small>${conBand.length} con banderas sin revisar</small></div>
+      <div><span>Uso personal</span><b class="${personal.length ? 'rojo' : ''}">${usd(personal.reduce((x, s) => x + s.costo, 0))}</b><small>${personal.length} sesión(es) marcadas</small></div>
+      <div><span>Máquinas</span><b>${maqs.length}</b><small>${maqs.map(m => esc(m.hostname)).join(', ') || '—'}</small></div>
+    </div>
+    <h4>Costo diario</h4>
+    <svg viewBox="0 0 ${W} ${H}" class="ficha-svg" role="img" aria-label="Costo diario de ${esc(mb.nombre)}">${barras}<line x1="0" x2="${W}" y1="${H - 14}" y2="${H - 14}" stroke="var(--border)"/><text x="0" y="${H - 2}" font-size="10" fill="var(--muted)">${listaDias[0]?.slice(5) || ''}</text><text x="${W}" y="${H - 2}" font-size="10" text-anchor="end" fill="var(--muted)">${listaDias.at(-1)?.slice(5) || ''}</text></svg>
+    <h4>Máquinas</h4>
+    <div>${maqs.map(m => `<div class="ficha-maq"><b>${esc(m.hostname)}</b> · ${esc(m.usuario_windows)} · ${estadoReporte(m.ultimo_reporte)}</div>`).join('') || '<span class="small">Sin máquinas asignadas.</span>'}</div>
+    <h4>Sesiones más costosas</h4>
+    <div class="tbl-wrap"><table><thead><tr><th>Inicio</th><th>Título · carpeta</th><th class="n">Costo</th><th>Banderas</th><th>Revisión</th></tr></thead><tbody>
+      ${top.map(s => `<tr><td>${fh(s.inicio)}</td><td class="tit"><b>${esc(s.titulo || '(sin título)')}</b><div class="small">${esc(s.carpeta || '—')}</div></td><td class="n">${usd(s.costo)}</td><td>${s.banderas.map(([c, t]) => `<span class="flag ${c}">${t}</span>`).join('') || '—'}</td><td>${s.revision === 'personal' ? '<span class="st bad">Personal</span>' : s.revision === 'trabajo' ? '<span class="st ok">Trabajo</span>' : '<span class="small">Pendiente</span>'}</td></tr>`).join('') || '<tr><td colspan="5" class="small">Sin sesiones en el rango.</td></tr>'}
+    </tbody></table></div>
+    <p class="note"><button class="link-s" id="fichaVerSes">Ver y revisar todas sus sesiones →</button></p>`;
+  const dlg = $('#ficha');
+  dlg.showModal();
+  $('#fichaCerrar').onclick = () => dlg.close();
+  $('#fichaVerSes').onclick = () => { dlg.close(); filtroMiembro = id; filtroSes = 'todas'; document.querySelectorAll('#fSes button').forEach(x => x.setAttribute('aria-pressed', x.dataset.f === 'todas')); renderSesiones(); $('#secSesiones').scrollIntoView({ behavior: 'smooth' }); };
 }
 function correoSesion() {
   try { return JSON.parse(atob(sesion.access.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).email || ''; } catch { return esDemo() ? 'lider@dlwlatam.com' : ''; }
@@ -795,6 +943,11 @@ $('#fSes').addEventListener('click', e => {
   filtroSes = b.dataset.f; renderSesiones();
 });
 $('#fSesMiembro').addEventListener('change', e => { filtroMiembro = e.target.value; renderSesiones(); });
+let tb; $('#fSesBuscar').addEventListener('input', e => { clearTimeout(tb); tb = setTimeout(() => { busqueda = normalizar(e.target.value); renderSesiones(); }, 200); });
+$('#aGuardar').addEventListener('click', async () => {
+  const lista = [...new Set($('#aPalabras').value.split(',').map(normalizar).filter(Boolean))];
+  try { await guardarAjuste('palabras_personales', lista); $('#aEstado').textContent = `Guardado · ${lista.length} palabras`; } catch (e) { alert('No se pudo guardar: ' + e.message); }
+});
 $('#fMiembro').addEventListener('submit', async e => {
   e.preventDefault();
   const nombre = $('#mNombre').value.trim(), correo = $('#mCorreo').value.trim() || null;
