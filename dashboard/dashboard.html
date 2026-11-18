@@ -617,6 +617,10 @@ body.en-cuota #filtroEqTabs, body.en-cuota #filtroEqMovil { display: none !impor
 .h2-link .link-s { text-transform: none; letter-spacing: 0; font-size: 13px; }
 #tTop td, #tModelos td { padding-top: 7px; padding-bottom: 7px; }
 #tTop .pos { width: 22px; height: 22px; }
+#tTop .fila-nomed td { color: var(--critical); }
+#tTop .fila-nomed .pos { background: var(--critical); color: #fff; }
+#tTop .cq-th { color: var(--text); }
+.lm-cuota { margin: 8px 2px 0; font-size: 12.5px; color: var(--text-2); }
 @media (max-width: 760px) { .pager { justify-content: center; } .pg { min-width: 40px; height: 40px; } }
 
 /* Distribución en pantallas anchas */
@@ -969,7 +973,7 @@ let dias = 30, maquinas = [], consumo = [], miembros = [], sesiones = [], animar
 // base = datos completos; las variables de arriba son la vista filtrada por equipo.
 let base = null, equipos = [], filtroEquipo = store.get('ct_eq') ?? null;
 let ajustes = structuredClone(AJUSTES_DEF), faltan = new Set();
-let cuotaAuto = null; // última lectura automática de la cuota (tabla cuota_lecturas)
+let cuotaAuto = null, cuotaHist = []; // lecturas automáticas de la cuota (tabla cuota_lecturas): la última y el historial
 let filtroSes = 'banderas', filtroMiembro = '', busqueda = '';
 
 async function opcional(path, migracion) {
@@ -987,9 +991,9 @@ async function cargar() {
     opcional(`sesiones?select=machine_id,session_id,inicio,fin,titulo,carpeta,entrypoint,por_modelo,mensajes,mensajes_subagente,revision,revisado_por${desde ? '&inicio=gte.' + desde : ''}&order=inicio.desc`, '02-sesiones.sql'),
     opcional('ajustes?select=clave,valor', '03-ajustes.sql'),
     opcional('equipos?select=*&order=nombre', '04-equipos.sql'),
-    opcional('cuota_lecturas?select=*&order=leido.desc&limit=1', '06-cuota.sql'),
+    opcional('cuota_lecturas?select=leido,semanal_pct,semanal_reinicio,sesion_pct,sesion_reinicio,detalle&order=leido.desc&limit=3000', '06-cuota.sql'),
   ]);
-  cuotaAuto = lecturasCuota[0] || null;
+  cuotaHist = lecturasCuota; cuotaAuto = lecturasCuota[0] || null;
   ajustes = structuredClone(AJUSTES_DEF);
   for (const f of filasAjustes) if (f.clave in ajustes && (Array.isArray(f.valor) || f.clave === 'cuota')) ajustes[f.clave] = f.valor;
   base = { maquinas, consumo, miembros, sesiones };
@@ -1647,6 +1651,22 @@ function consumoEntre(desde, hasta, filas = (base ? base.consumo : consumo)) {
   }
   return t;
 }
+// Límite semanal (costo eq.) estimado con el historial de lecturas automáticas. En cada lectura,
+// medido ÷ %ClaudeCode <= límite real (el uso sin agente solo agranda el %), así que el máximo es la mejor
+// estimación. Solo lecturas con >= 10% para que el redondeo del % no lo infle.
+function limiteEstimado() {
+  let max = 0;
+  for (const a of cuotaHist) {
+    if (!a.semanal_reinicio) continue;
+    const leido = new Date(a.leido).getTime(), des = a.detalle?.desglose;
+    const pctCode = (des && des.claude_code != null ? +des.claude_code : +a.semanal_pct) / 100;
+    if (pctCode < 0.10) continue;
+    const { inicio } = cicloDesde(a.semanal_reinicio, leido);
+    const medido = consumoEntre(inicio, leido);
+    if (medido >= 1) max = Math.max(max, medido / pctCode);
+  }
+  return max || null;
+}
 // Fuente principal: la lectura automática que envían los agentes v2.3.0+ (mismo dato que /usage).
 // Respaldo: la calibración manual de la líder (ajustes.cuota).
 function calcularCuota() {
@@ -1665,7 +1685,8 @@ function calcularCuota() {
     const leido = new Date(auto.leido).getTime(), pctLeido = +auto.semanal_pct / 100, medidoLeido = consumoEntre(inicio, leido);
     desglose = auto.detalle?.desglose || null;
     const pctCode = desglose && desglose.claude_code != null ? +desglose.claude_code / 100 : pctLeido;
-    if (pctCode >= 0.03 && medidoLeido >= 1) limite = medidoLeido / pctCode;
+    limite = limiteEstimado();
+    if (!limite && pctCode >= 0.03 && medidoLeido >= 1) limite = medidoLeido / pctCode;
     pct = pctLeido + (limite ? consumoEntre(leido, ahora) / limite : 0);
     const medidoPct = limite ? medidoLeido / limite * 100 : 0;
     noMedido = limite ? Math.max(0, pctLeido * 100 - medidoPct) : 0;
@@ -1887,17 +1908,37 @@ function responsiva(tabla) {
 }
 function badge(sel, texto, clase) { const el = $(sel); el.innerHTML = texto; el.className = 'badge' + (clase ? ' ' + clase : ''); }
 
+// Consumo de cada miembro dentro del ciclo semanal vigente (costo eq.).
+function consumoCicloPorMiembro(cq) {
+  const ahora = Date.now(), porMb = new Map(), todasMaq = base ? base.maquinas : maquinas;
+  for (const r of (base ? base.consumo : consumo)) {
+    const d0 = new Date(r.dia + 'T00:00:00').getTime(), sol = Math.max(0, Math.min(d0 + DIA_MS, ahora) - Math.max(d0, cq.inicio));
+    if (sol <= 0) continue;
+    const maq = todasMaq.find(m => m.machine_id === r.machine_id), k = maq?.miembro_id || '__sin';
+    porMb.set(k, (porMb.get(k) || 0) + r.costo * sol / DIA_MS);
+  }
+  return porMb;
+}
+
 function renderTop(equipo, totalCosto) {
   const top = equipo.filter(g => g.costo > 0).slice(0, 5), maxC = top[0]?.costo || 1;
+  // Contraste con la cuenta: % del límite semanal que consumió cada uno en el ciclo vigente.
+  const cq = calcularCuota(), conCuota = cq && cq.limite && !cq.calibInvalida && !cq.sinLimite;
+  const ciclo = conCuota ? consumoCicloPorMiembro(cq) : null;
+  const celdaCuota = c => '<td class="n">' + (conCuota ? '<b>' + (c / cq.limite * 100).toFixed(1) + '%</b>' : '—') + '</td>';
   const fila = (g, i) => '<tr><td><span class="pos">' + (i + 1) + '</span></td>' +
     '<td><button class="link-m" data-ficha="' + esc(g.mb.id) + '">' + esc(g.mb.nombre) + '</button> <span class="small">· ' + g.maquinas.length + ' máq.</span></td>' +
     '<td class="n"><b>' + usd(g.costo) + '</b></td>' +
     '<td class="n"><div class="share">' + pct(g.costo / (totalCosto || 1)) + '<span class="bar"><i style="width:' + (g.costo / maxC * 100).toFixed(1) + '%"></i></span></div></td>' +
+    celdaCuota(ciclo?.get(g.mb.id) || 0) +
     '<td class="n">' + (g.nPersonal ? '<span class="st bad">' + usd(g.personal) + '</span>' : '—') + '</td></tr>';
-  $('#tTop').innerHTML = '<thead><tr><th>#</th><th>Miembro</th><th class="n">Costo eq.</th><th class="n">% del total</th><th class="n">Personal</th></tr></thead><tbody>' +
-    (top.length ? top.map(fila).join('') : '<tr><td colspan="5" class="small">Aún no hay miembros con consumo asignado.</td></tr>') + '</tbody>';
+  const sinAgente = conCuota && cq.noMedido >= 0.5
+    ? '<tr class="fila-nomed"><td><span class="pos">?</span></td><td>Sin agente / otras sesiones <span class="small">· chat de claude.ai o máquinas sin GestorTokens</span></td><td class="n">' + usd(cq.noMedido / 100 * cq.limite) + '</td><td class="n">—</td><td class="n"><b class="rojo">' + cq.noMedido.toFixed(1) + '%</b></td><td class="n">—</td></tr>' : '';
+  $('#tTop').innerHTML = '<thead><tr><th>#</th><th>Miembro</th><th class="n">Costo eq.</th><th class="n">% del total</th><th class="n" title="% del límite semanal de la cuenta que consumió cada uno en el ciclo vigente. Entre paréntesis, el total usado por la cuenta.">Cuota sem.' + (conCuota ? ' <span class="cq-th">(' + Math.round(cq.pct * 100) + '%)</span>' : '') + '</th><th class="n">Personal</th></tr></thead><tbody>' +
+    (top.length ? top.map(fila).join('') : '<tr><td colspan="6" class="small">Aún no hay miembros con consumo asignado.</td></tr>') + sinAgente + '</tbody>';
   const maxT = top[0]?.costo || 1;
-  $('#lmTop').innerHTML = top.length ? top.map(g => itemMiembro(g, totalCosto, maxT, false)).join('') : vacioLista('Aún no hay miembros con consumo asignado.');
+  $('#lmTop').innerHTML = (top.length ? top.map(g => itemMiembro(g, totalCosto, maxT, false)).join('') : vacioLista('Aún no hay miembros con consumo asignado.')) +
+    (conCuota ? '<p class="lm-cuota">Cuenta esta semana: <b>' + Math.round(cq.pct * 100) + '%</b>' + (cq.noMedido >= 0.5 ? ' · sin agente / otras sesiones: <b class="rojo">' + cq.noMedido.toFixed(1) + '%</b>' : '') + '</p>' : '');
   document.querySelectorAll('#tTop [data-ficha], #lmTop [data-ficha]').forEach(b => b.addEventListener('click', () => abrirFicha(b.dataset.ficha)));
 }
 
@@ -2048,6 +2089,7 @@ function demo() {
     const reinicio = new Date(Date.now() + 2.2 * DIA_MS); reinicio.setMinutes(0, 0, 0);
     ajustes.cuota = null;
     cuotaAuto = { machine_id: 'demo', leido: new Date(Date.now() - 12 * 6e4).toISOString(), semanal_pct: 74, semanal_reinicio: reinicio.toISOString(), sesion_pct: 38, sesion_reinicio: new Date(Date.now() + 2.4 * 36e5).toISOString(), detalle: { desglose: { claude_code: 66, chat: 8, cowork: 0, other: 0 } } };
+    cuotaHist = [cuotaAuto];
   }
   mostrar('dash'); $('#subtitulo').textContent = 'MODO DEMO · datos sintéticos'; animar = true; render();
 }
