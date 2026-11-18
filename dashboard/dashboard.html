@@ -291,13 +291,21 @@ dialog#dlg.peligro { border-top-color: var(--critical); }
 .dlg-acciones { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
 .dlg-acciones .btn-s { padding: 8px 16px; font-size: 14px; }
 .btn-s.rojo { background: var(--critical); border-color: var(--critical); color: #fff; }
-.avisos { position: fixed; right: 18px; bottom: 18px; z-index: 50; display: grid; gap: 8px; max-width: min(420px, calc(100vw - 36px)); }
-.aviso { display: flex; align-items: center; gap: 12px; background: #1e2c54; color: #fff; border-left: 4px solid var(--lime); border-radius: 8px; padding: 11px 14px; box-shadow: 0 10px 30px rgba(0,0,0,.25); font-size: 14px; animation: up .25s cubic-bezier(.2,.7,.2,1); }
-.aviso.error { border-left-color: #e66767; }
-.aviso span { flex: 1; }
-.aviso button { background: none; border: 0; color: #c8f07f; font: 700 14px 'Barlow', sans-serif; cursor: pointer; padding: 2px 4px; }
-.aviso button.cerrar { color: #8590ab; font-size: 16px; }
-@media (max-width: 760px) { .avisos { left: 12px; right: 12px; bottom: 12px; max-width: none; } }
+.avisos { position: fixed; right: 24px; bottom: 72px; z-index: 60; display: grid; gap: 10px; width: min(440px, calc(100vw - 48px)); }
+.aviso { position: relative; overflow: hidden; display: flex; align-items: center; gap: 12px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-left: 5px solid var(--good); border-radius: 10px; padding: 12px 12px 14px 14px; box-shadow: 0 14px 40px rgba(15,23,48,.28), 0 2px 6px rgba(15,23,48,.12); font-size: 14.5px; animation: entraAviso .35s cubic-bezier(.2,.8,.2,1); }
+.aviso.error { border-left-color: var(--critical); }
+.aviso .ico { flex: 0 0 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 14px; color: #fff; background: var(--good); }
+.aviso.error .ico { background: var(--critical); }
+.aviso span.txt { flex: 1; line-height: 1.35; }
+.aviso button { background: none; border: 0; cursor: pointer; font: 700 14px 'Barlow', sans-serif; padding: 6px 8px; border-radius: 6px; }
+.aviso button.accion { color: #1e2c54; background: var(--lime); }
+.aviso button.accion:hover { background: var(--lime-strong); }
+.aviso button.cerrar { color: var(--muted); font-size: 18px; line-height: 1; }
+.aviso .tiempo { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--good); opacity: .55; animation: tiempoAviso linear forwards; }
+.aviso.error .tiempo { background: var(--critical); }
+@keyframes entraAviso { from { opacity: 0; transform: translateY(16px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes tiempoAviso { from { width: 100%; } to { width: 0; } }
+@media (max-width: 760px) { .avisos { left: 12px; right: 12px; bottom: 12px; width: auto; } }
 
 /* Listas móviles (en escritorio se usan las tablas) */
 .lm { display: none; }
@@ -1153,13 +1161,19 @@ function dialogo({ titulo, texto = '', aceptar = 'Aceptar', peligro = false, cam
 function aviso(texto, tipo = 'ok', accion = null) {
   const el = document.createElement('div');
   el.className = 'aviso' + (tipo === 'error' ? ' error' : '');
-  el.innerHTML = '<span></span>' + (accion ? '<button class="accion"></button>' : '') + '<button class="cerrar" aria-label="Cerrar aviso">×</button>';
-  el.querySelector('span').textContent = texto;
-  const quitar = () => el.remove();
+  const ms = tipo === 'error' ? 9000 : accion ? 8000 : 4000;
+  el.innerHTML = '<span class="ico" aria-hidden="true">' + (tipo === 'error' ? '!' : '✓') + '</span><span class="txt"></span>' + (accion ? '<button class="accion"></button>' : '') + '<button class="cerrar" aria-label="Cerrar aviso">×</button><i class="tiempo" style="animation-duration:' + ms + 'ms"></i>';
+  el.querySelector('.txt').textContent = texto;
+  let t;
+  const quitar = () => { clearTimeout(t); el.remove(); };
+  const programar = () => { t = setTimeout(quitar, ms); };
   if (accion) { const b = el.querySelector('.accion'); b.textContent = accion.texto; b.onclick = () => { quitar(); accion.accion(); }; }
   el.querySelector('.cerrar').onclick = quitar;
+  // Al pasar el cursor se pausa (para alcanzar a pulsar Deshacer).
+  el.addEventListener('mouseenter', () => { clearTimeout(t); el.querySelector('.tiempo').style.animationPlayState = 'paused'; });
+  el.addEventListener('mouseleave', () => { el.querySelector('.tiempo').style.animationPlayState = 'running'; programar(); });
   $('#avisos').appendChild(el);
-  setTimeout(quitar, tipo === 'error' ? 9000 : accion ? 7000 : 3500);
+  programar();
 }
 
 // ---------- listas móviles ----------
