@@ -454,6 +454,59 @@ dialog#dlg.peligro { border-top-color: var(--critical); }
   .eq-fila .eqC { grid-column: 1 / -1; }
 }
 
+/* Tableros por equipo */
+.tableros { display: grid; grid-template-columns: repeat(auto-fit, minmax(480px, 1fr)); gap: 16px; align-items: start; }
+.tablero { border: 1px solid var(--border); border-top: 5px solid var(--c); border-radius: 12px; background: var(--surface); overflow: hidden; }
+.tablero.sin { border-style: dashed; border-top-style: solid; }
+.tb-cab { display: grid; grid-template-columns: 1fr auto; gap: 10px 16px; padding: 14px 16px 12px; background: linear-gradient(180deg, color-mix(in srgb, var(--c) 9%, transparent), transparent); }
+.tb-tit { display: flex; align-items: center; gap: 8px; }
+.tb-tit h3 { margin: 0; font-size: 19px; }
+.tb-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--c); }
+.tb-lider { display: flex; align-items: center; gap: 10px; justify-self: end; text-align: left; }
+.tb-lider .mi-av { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: var(--c); color: #fff; font-weight: 700; }
+.tb-lider small { display: block; font-size: 11px; color: var(--text-2); }
+.tb-lider small:first-child { font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.tb-lider b { display: block; font-size: 15px; }
+.tb-lider.vacio small { text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--muted); }
+.tb-kpis { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.tb-kpis div { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; }
+.tb-kpis small { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--text-2); }
+.tb-kpis b { font-size: 18px; }
+.tb-kpis b.rojo { color: var(--critical); }
+.tb-barra { grid-column: 1 / -1; height: 6px; background: var(--grid); border-radius: 3px; overflow: hidden; }
+.tb-barra i { display: block; height: 100%; background: var(--c); border-radius: 3px; }
+.tb-lista { padding: 4px 8px 8px; }
+.tb-fila { display: grid; grid-template-columns: 22px 38px 1fr auto auto; gap: 10px; align-items: center; padding: 9px 8px; border-radius: 8px; cursor: pointer; }
+.tb-fila + .tb-fila { border-top: 1px solid var(--grid); }
+.tb-fila:hover { background: color-mix(in srgb, var(--c) 7%, transparent); }
+.tb-pos { font-weight: 700; color: var(--muted); text-align: center; }
+.tb-fila .mi-av { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: #1e2c54; color: #fff; font-weight: 700; font-size: 14px; }
+.tb-fila:first-child .mi-av { background: var(--c); }
+.tb-n { min-width: 0; }
+.tb-n b { display: block; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tb-n small { display: block; font-size: 12px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tb-n .st { font-size: 12px; }
+.tb-n .mi-bar { height: 4px; margin-top: 5px; background: var(--grid); border-radius: 2px; overflow: hidden; }
+.tb-n .mi-bar i { display: block; height: 100%; border-radius: 2px; }
+.tb-c { text-align: right; }
+.tb-c b { display: block; font-size: 15.5px; }
+.tb-c small { font-size: 12px; color: var(--text-2); }
+.tb-acc { display: flex; align-items: center; gap: 4px; }
+.tb-acc .asignarEq { max-width: 140px; font-size: 13px; padding: 5px 6px; }
+.tb-x { background: none; border: 1px solid transparent; color: var(--muted); border-radius: 6px; width: 28px; height: 28px; cursor: pointer; font-size: 13px; }
+.tb-x:hover { border-color: var(--critical); color: var(--critical); }
+@media (max-width: 760px) {
+  .tableros { grid-template-columns: 1fr; gap: 12px; }
+  .tb-cab { grid-template-columns: 1fr; }
+  .tb-lider { justify-self: start; }
+  .tb-kpis b { font-size: 16px; }
+  .tb-fila { grid-template-columns: 38px 1fr auto; padding: 10px 6px; }
+  .tb-pos { display: none; }
+  .tb-acc { grid-column: 1 / -1; }
+  .tb-acc .asignarEq { flex: 1; max-width: none; padding: 9px; font-size: 14px; }
+  .tb-x { width: 40px; height: 40px; border-color: var(--border); }
+}
+
 /* Paginación */
 .pager { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
 .pager:empty { display: none; }
@@ -605,17 +658,15 @@ tbody.animar tr { animation: rowin .45s ease both; }
     <!-- ===== Equipo ===== -->
     <div class="panel" data-panel="equipo" role="tabpanel" hidden>
       <div class="card anim" id="secEquipo">
-        <h2>Equipo · ranking por miembro</h2>
-        <div class="tbl-wrap"><table id="tEquipo"></table></div>
-        <div class="lm" id="lmEquipo"></div>
-        <div class="pager" id="pgEquipo"></div>
+        <h2>Equipos, líderes y miembros</h2>
+        <div class="tableros" id="tableros"></div>
         <form class="fila-form" id="fMiembro">
           <input id="mNombre" placeholder="Nombre del miembro" required aria-label="Nombre del miembro">
           <input id="mCorreo" type="email" placeholder="correo@dlwlatam.com (opcional)" aria-label="Correo del miembro">
           <select id="mEquipo" aria-label="Equipo del miembro"></select>
           <button class="btn-s primary">Agregar miembro</button>
         </form>
-        <p class="note">Cada miembro puede tener varias máquinas; se asignan en la pestaña Máquinas. Haz clic en un nombre para ver su ficha.</p>
+        <p class="note">Cada miembro puede tener varias máquinas (se asignan en la pestaña Máquinas). Haz clic en una persona para ver su ficha; con el selector la mueves a otro equipo.</p>
       </div>
     </div>
 
@@ -1038,21 +1089,30 @@ function estadoReporte(ts) {
 }
 
 function renderEquipo(equipo, totalCosto) {
-  const maxC = equipo[0]?.costo || 1;
-  const { ini, vis: pagEq } = paginar('equipo', equipo, '#pgEquipo');
-  $('#tEquipo').innerHTML = `<thead><tr><th>#</th><th>Miembro</th><th>Equipo</th><th>Máquinas</th><th class="n">Costo eq.</th><th class="n">% del total</th><th class="n">Uso personal</th><th>Último reporte</th><th></th></tr></thead><tbody class="${animar ? 'animar' : ''}">` +
-    (pagEq.length ? pagEq.map((g, i) => `<tr style="animation-delay:${Math.min(i, 12) * 45}ms">
-        <td><span class="pos">${ini + i + 1}</span></td>
-        <td><button class="link-m" data-ficha="${esc(g.mb.id)}" title="Ver ficha de ${esc(g.mb.nombre)}">${esc(g.mb.nombre)}</button>${g.mb.correo ? `<div class="small">${esc(g.mb.correo)}</div>` : ''}</td>
-        <td><select class="asignarEq" data-mb="${esc(g.mb.id)}" aria-label="Equipo de ${esc(g.mb.nombre)}">${opcEquipo(g.mb.equipo_id)}</select></td>
-        <td>${g.maquinas.map(m => `<span class="chip">${esc(m.hostname)}</span>`).join('') || '<span class="small">ninguna</span>'}</td>
-        <td class="n"><b>${usd(g.costo)}</b></td>
-        <td class="n"><div class="share">${pct(g.costo / (totalCosto || 1))}<span class="bar"><i style="width:${(g.costo / maxC * 100).toFixed(1)}%"></i></span></div></td>
-        <td class="n">${g.nPersonal ? `<span class="st bad">${usd(g.personal)} · ${g.nPersonal}</span>` : '<span class="small">—</span>'}</td>
-        <td>${g.maquinas.length ? estadoReporte(g.ultimo) : '<span class="small">—</span>'}</td>
-        <td><button class="btn-s" data-borrar="${esc(g.mb.id)}" title="Eliminar miembro" aria-label="Eliminar a ${esc(g.mb.nombre)}">Eliminar</button></td>
-      </tr>`).join('') : '<tr><td colspan="9" class="small">Aún no hay miembros. Agrégalos abajo y luego asígnales sus máquinas.</td></tr>') + '</tbody>';
-  $('#lmEquipo').innerHTML = pagEq.length ? pagEq.map(g => itemMiembro(g, totalCosto, maxC, true)).join('') : vacioLista('Aún no hay miembros. Agrégalos abajo y luego asígnales sus máquinas.');
+  // Un tablero por equipo (con su líder) y uno gris para quienes no tienen equipo.
+  const grupos = equipos.map((e, i) => ({ eq: e, col: 'var(' + COL_EQ[i % COL_EQ.length] + ')', gs: equipo.filter(g => g.mb.equipo_id === e.id) }));
+  const sinEq = equipo.filter(g => !g.mb.equipo_id || !equipos.some(e => e.id === g.mb.equipo_id));
+  if (sinEq.length || !equipos.length) grupos.push({ eq: null, col: 'var(--s-otros)', gs: sinEq });
+  const visibles = filtroEquipo ? grupos.filter(x => x.gs.length || (x.eq && x.eq.id === filtroEquipo)) : grupos;
+  const fila = (g, i, maxG) => '<div class="tb-fila" data-ficha="' + esc(g.mb.id) + '" role="button" tabindex="0" title="Ver ficha de ' + esc(g.mb.nombre) + '">' +
+    '<span class="tb-pos">' + (i + 1) + '</span>' +
+    '<div class="mi-av">' + esc(iniciales(g.mb.nombre)) + '</div>' +
+    '<div class="tb-n"><b>' + esc(g.mb.nombre) + '</b><small>' + (g.maquinas.length ? g.maquinas.map(m => esc(m.hostname)).join(', ') + ' · ' + estadoReporte(g.ultimo) : 'sin máquinas') + '</small>' +
+    '<div class="mi-bar"><i style="width:' + (g.costo / maxG * 100).toFixed(1) + '%;background:var(--c)"></i></div></div>' +
+    '<div class="tb-c"><b>' + usd(g.costo) + '</b><small>' + pct(g.costo / (totalCosto || 1)) + (g.nPersonal ? ' · <span class="st bad">personal ' + usd(g.personal) + '</span>' : '') + '</small></div>' +
+    '<div class="tb-acc"><select class="asignarEq" data-mb="' + esc(g.mb.id) + '" aria-label="Equipo de ' + esc(g.mb.nombre) + '">' + opcEquipo(g.mb.equipo_id) + '</select>' +
+    '<button class="tb-x" data-borrar="' + esc(g.mb.id) + '" title="Eliminar miembro" aria-label="Eliminar a ' + esc(g.mb.nombre) + '">✕</button></div></div>';
+  $('#tableros').innerHTML = visibles.map(({ eq, col, gs }) => {
+    const costo = gs.reduce((x, g) => x + g.costo, 0), pers = gs.reduce((x, g) => x + g.personal, 0), maxG = gs[0]?.costo || 1;
+    const lider = eq && eq.lider
+      ? '<div class="tb-lider"><div class="mi-av">' + esc(iniciales(eq.lider)) + '</div><div><small>Líder</small><b>' + esc(eq.lider) + '</b>' + (eq.lider_correo ? '<small>' + esc(eq.lider_correo) + '</small>' : '') + '</div></div>'
+      : (eq ? '<div class="tb-lider vacio"><small>Sin líder asignado · edítalo en Ajustes</small></div>' : '<div class="tb-lider vacio"><small>Asígnales un equipo con el selector</small></div>');
+    return '<section class="tablero' + (eq ? '' : ' sin') + '" style="--c:' + col + '">' +
+      '<header class="tb-cab"><div class="tb-tit"><span class="tb-dot"></span><h3>' + (eq ? 'Equipo ' + esc(eq.nombre) : 'Sin equipo') + '</h3><span class="chip">' + gs.length + ' miembro(s)</span></div>' + lider +
+      '<div class="tb-kpis"><div><small>Costo eq.</small><b>' + usd(costo) + '</b></div><div><small>% del total</small><b>' + pct(costo / (totalCosto || 1)) + '</b></div><div><small>Uso personal</small><b' + (pers ? ' class="rojo"' : '') + '>' + usd(pers) + '</b></div></div>' +
+      '<div class="tb-barra"><i style="width:' + (costo / (totalCosto || 1) * 100).toFixed(1) + '%"></i></div></header>' +
+      '<div class="tb-lista">' + (gs.length ? gs.map((g, i) => fila(g, i, maxG)).join('') : '<p class="lm-vacio">Este equipo aún no tiene miembros.</p>') + '</div></section>';
+  }).join('') || '<p class="lm-vacio">Aún no hay miembros. Agrégalos abajo.</p>';
   document.querySelectorAll('[data-borrar]').forEach(b => b.addEventListener('click', async e => {
     e.stopPropagation();
     const mb = miembros.find(x => x.id === b.dataset.borrar);
@@ -1066,7 +1126,8 @@ function renderEquipo(equipo, totalCosto) {
     } catch (e) { aviso('No se pudo eliminar: ' + e.message, 'error'); }
   }));
   document.querySelectorAll('[data-ficha]').forEach(b => b.addEventListener('click', () => abrirFicha(b.dataset.ficha)));
-  enlazarAsignarEq('#tEquipo');
+  enlazarAsignarEq('#tableros');
+  document.querySelectorAll('#tableros .tb-fila').forEach(el => el.addEventListener('keydown', e => { if (e.key === 'Enter') abrirFicha(el.dataset.ficha); }));
   $('#mEquipo').innerHTML = opcEquipo(filtroEquipo && filtroEquipo !== '__sin' ? filtroEquipo : null);
   $('#mEquipo').hidden = !equipos.length;
 }
