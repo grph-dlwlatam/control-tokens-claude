@@ -859,15 +859,15 @@ async function cargar() {
   ]);
   ajustes = structuredClone(AJUSTES_DEF);
   for (const f of filasAjustes) if (f.clave in ajustes && Array.isArray(f.valor)) ajustes[f.clave] = f.valor;
-  prepararDatos();
   base = { maquinas, consumo, miembros, sesiones };
+  prepararDatos();
   equipoPorDefecto();
   $('#subtitulo').textContent = `Cuenta compartida del equipo · actualizado ${new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}`;
   animar = true; render();
 }
 function prepararDatos() {
-  for (const r of consumo) r.costo = costo(r);
-  for (const s of sesiones) {
+  for (const r of (base ? base.consumo : consumo)) r.costo = costo(r);
+  for (const s of (base ? base.sesiones : sesiones)) {
     s.costo = Object.entries(s.por_modelo || {}).reduce((a, [mo, u]) => a + costo({ modelo: mo, input_tokens: u.input || 0, output_tokens: u.output || 0, cache_creation_tokens: u.cache_creation || 0, cache_read_tokens: u.cache_read || 0 }), 0);
   }
   recalcularBanderas();
@@ -1638,8 +1638,8 @@ function demo() {
     consumo.push({ machine_id: m.machine_id, dia: isoDia(new Date(Date.now() - (29 - d) * 864e5)), modelo: mo, input_tokens: Math.round(f * 2e4), output_tokens: Math.round(f * 4e4), cache_creation_tokens: Math.round(f * 3e5), cache_read_tokens: Math.round(f * 4e6), mensajes: Math.round(f * 40) });
   }));
   if (dias) { const desde = isoDia(new Date(Date.now() - (dias - 1) * 864e5)); consumo = consumo.filter(r => r.dia >= desde); sesiones = sesiones.filter(s => s.inicio.slice(0, 10) >= desde); }
-  prepararDatos();
   base = { maquinas, consumo, miembros, sesiones };
+  prepararDatos();
   mostrar('dash'); $('#subtitulo').textContent = 'MODO DEMO · datos sintéticos'; animar = true; render();
 }
 async function iniciar() {
