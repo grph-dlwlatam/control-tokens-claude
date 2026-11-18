@@ -34,7 +34,7 @@ import (
 )
 
 const (
-	version       = "2.0.0"
+	version       = "2.1.0"
 	nombreTarea   = "GestorTokensDLW"
 	nombreExe     = "GestorTokens.exe"
 	diasRecalculo = 7
@@ -201,10 +201,10 @@ func medir() (string, error) {
 	sum := sha256.Sum256([]byte(strings.ToLower(machineGUID() + "|" + host + "|" + usuario)))
 	id := hex.EncodeToString(sum[:])[:24]
 
-	archivos, filas := recolectar(desde, carpetas)
-	logf("maquina=%s usuario=%s id=%s archivos=%d filas=%d desde=%s", host, usuario, id, archivos, len(filas), valor(desde, "inicio"))
+	archivos, filas, sesiones := recolectar(desde, carpetas)
+	logf("maquina=%s usuario=%s id=%s archivos=%d filas=%d sesiones=%d desde=%s", host, usuario, id, archivos, len(filas), len(sesiones), valor(desde, "inicio"))
 
-	payload := map[string]any{"machine_id": id, "hostname": host, "usuario": usuario, "version": version, "filas": filas}
+	payload := map[string]any{"machine_id": id, "hostname": host, "usuario": usuario, "version": version, "filas": filas, "sesiones": sesiones}
 	if flags["dry-run"] {
 		b, _ := json.MarshalIndent(payload, "", "  ")
 		salida := filepath.Join(dirInstal, "dry-run.json")
@@ -215,10 +215,13 @@ func medir() (string, error) {
 		return "Simulación: " + salida, nil
 	}
 
-	const lote = 2000
-	for i := 0; i < len(filas) || i == 0; i += lote {
-		fin := min(i+lote, len(filas))
-		parte := map[string]any{"machine_id": id, "hostname": host, "usuario": usuario, "version": version, "filas": filas[i:fin]}
+	// Envío por lotes: hasta 2000 filas diarias y 300 sesiones por llamada.
+	const loteF, loteS = 2000, 300
+	for n := 0; n == 0 || n*loteF < len(filas) || n*loteS < len(sesiones); n++ {
+		f0, f1 := min(n*loteF, len(filas)), min((n+1)*loteF, len(filas))
+		s0, s1 := min(n*loteS, len(sesiones)), min((n+1)*loteS, len(sesiones))
+		parte := map[string]any{"machine_id": id, "hostname": host, "usuario": usuario, "version": version,
+			"filas": filas[f0:f1], "sesiones": sesiones[s0:s1]}
 		if err := enviar(parte); err != nil {
 			return "", err
 		}
@@ -311,11 +314,17 @@ type uso struct {
 }
 
 type registro struct {
-	Type      string `json:"type"`
-	Timestamp string `json:"timestamp"`
-	RequestID string `json:"requestId"`
-	UUID      string `json:"uuid"`
-	Message   *struct {
+	Type        string `json:"type"`
+	Timestamp   string `json:"timestamp"`
+	RequestID   string `json:"requestId"`
+	UUID        string `json:"uuid"`
+	SessionID   string `json:"sessionId"`
+	Cwd         string `json:"cwd"`
+	Entrypoint  string `json:"entrypoint"`
+	IsSidechain bool   `json:"isSidechain"`
+	AiTitle     string `json:"aiTitle"`
+	CustomTitle string `json:"customTitle"`
+	Message     *struct {
 		ID    string `json:"id"`
 		Model string `json:"model"`
 		Usage *uso   `json:"usage"`
@@ -323,48 +332,147 @@ type registro struct {
 }
 
 type mensajeUso struct {
-	dia, modelo string
-	u           uso
+	dia, modelo, sesion string
+	sub                 bool
+	u                   uso
 }
 
-func recolectar(desde string, carpetas []string) (int, []fila) {
+type usoModelo struct {
+	Input         int64 `json:"input"`
+	Output        int64 `json:"output"`
+	CacheCreation int64 `json:"cache_creation"`
+	CacheRead     int64 `json:"cache_read"`
+}
+
+// sesion resume una conversación de Claude Code. No incluye prompts ni respuestas:
+// solo el título que Claude Code le asigna, la carpeta, el horario y los tokens.
+type sesion struct {
+	ID          string                `json:"id"`
+	Inicio      string                `json:"inicio,omitempty"`
+	Fin         string                `json:"fin,omitempty"`
+	Titulo      string                `json:"titulo,omitempty"`
+	Carpeta     string                `json:"carpeta,omitempty"`
+	Entrypoint  string                `json:"entrypoint,omitempty"`
+	PorModelo   map[string]*usoModelo `json:"por_modelo"`
+	Mensajes    int                   `json:"mensajes"`
+	MensajesSub int                   `json:"mensajes_subagente"`
+
+	ini, fin                       time.Time
+	tituloAI, tituloPropio, cwdSub string
+}
+
+// claveSesion: <proyecto>/<id>.jsonl o <proyecto>/<id>/subagents/<agente>.jsonl
+func claveSesion(p string) string {
+	dir := filepath.Dir(p)
+	if strings.EqualFold(filepath.Base(dir), "subagents") {
+		return filepath.Base(filepath.Dir(dir))
+	}
+	return strings.TrimSuffix(filepath.Base(p), ".jsonl")
+}
+
+// carpetaRelativa quita el perfil del usuario de la ruta (no se envía el nombre de usuario).
+func carpetaRelativa(cwd string) string {
+	if cwd == "" {
+		return ""
+	}
+	casa, _ := os.UserHomeDir()
+	if rel, err := filepath.Rel(casa, cwd); err == nil && !strings.HasPrefix(rel, "..") {
+		if rel == "." {
+			return "~"
+		}
+		return `~\` + rel
+	}
+	return cwd
+}
+
+func recolectar(desde string, carpetas []string) (int, []fila, []sesion) {
 	var desdeT time.Time
 	if desde != "" {
 		desdeT, _ = time.ParseInLocation("2006-01-02", desde, time.Local)
 	}
-	archivos := 0
-	msgs := map[string]*mensajeUso{}
+
+	// 1) Agrupar archivos por sesión: se relee la sesión completa si alguno de sus archivos cambió.
+	grupos := map[string][]string{}
+	recientes := map[string]bool{}
 	for _, raiz := range carpetas {
 		_ = filepath.WalkDir(raiz, func(p string, d fs.DirEntry, err error) error {
 			if err != nil || d.IsDir() || !strings.HasSuffix(p, ".jsonl") {
 				return nil
 			}
-			if info, err := d.Info(); err != nil || (!desdeT.IsZero() && info.ModTime().Before(desdeT)) {
-				return nil
+			k := claveSesion(p)
+			grupos[k] = append(grupos[k], p)
+			if info, err := d.Info(); err == nil && (desdeT.IsZero() || !info.ModTime().Before(desdeT)) {
+				recientes[k] = true
 			}
+			return nil
+		})
+	}
+
+	archivos := 0
+	msgs := map[string]*mensajeUso{}
+	sesiones := map[string]*sesion{}
+	ses := func(id string) *sesion {
+		s, ok := sesiones[id]
+		if !ok {
+			s = &sesion{ID: id, PorModelo: map[string]*usoModelo{}}
+			sesiones[id] = s
+		}
+		return s
+	}
+	for k, rutas := range grupos {
+		if !recientes[k] {
+			continue
+		}
+		sort.Strings(rutas) // el archivo principal antes que los de subagentes
+		for _, p := range rutas {
 			datos, err := os.ReadFile(p)
 			if err != nil {
-				return nil
+				continue
 			}
 			archivos++
+			esSub := strings.Contains(strings.ToLower(p), `\subagents\`) || strings.Contains(p, "/subagents/")
 			for _, linea := range bytes.Split(datos, []byte("\n")) {
-				if !bytes.Contains(linea, []byte(`"usage"`)) {
+				esTitulo := bytes.Contains(linea, []byte(`"ai-title"`)) || bytes.Contains(linea, []byte(`"custom-title"`))
+				if !esTitulo && !bytes.Contains(linea, []byte(`"usage"`)) {
 					continue
 				}
 				var r registro
-				if json.Unmarshal(linea, &r) != nil || r.Type != "assistant" || r.Message == nil || r.Message.Usage == nil {
+				if json.Unmarshal(linea, &r) != nil {
 					continue
 				}
-				if r.Message.Model == "" || r.Message.Model == "<synthetic>" {
+				idSes := valor(r.SessionID, k)
+				switch {
+				case r.Type == "ai-title" && r.AiTitle != "":
+					ses(idSes).tituloAI = r.AiTitle // el último es el más actual
+					continue
+				case r.Type == "custom-title" && r.CustomTitle != "":
+					ses(idSes).tituloPropio = r.CustomTitle
+					continue
+				}
+				if r.Type != "assistant" || r.Message == nil || r.Message.Usage == nil || r.Message.Model == "" || r.Message.Model == "<synthetic>" {
 					continue
 				}
 				ts, err := time.Parse(time.RFC3339Nano, r.Timestamp)
 				if err != nil {
 					continue
 				}
-				dia := ts.Local().Format("2006-01-02")
-				if desde != "" && dia < desde {
-					continue
+				s := ses(idSes)
+				if s.ini.IsZero() || ts.Before(s.ini) {
+					s.ini = ts
+				}
+				if ts.After(s.fin) {
+					s.fin = ts
+				}
+				sub := esSub || r.IsSidechain
+				if r.Cwd != "" {
+					if !sub && s.Carpeta == "" {
+						s.Carpeta = carpetaRelativa(r.Cwd)
+					} else if s.cwdSub == "" {
+						s.cwdSub = carpetaRelativa(r.Cwd)
+					}
+				}
+				if s.Entrypoint == "" {
+					s.Entrypoint = r.Entrypoint
 				}
 				clave := r.UUID
 				if r.Message.ID != "" || r.RequestID != "" {
@@ -378,19 +486,37 @@ func recolectar(desde string, carpetas []string) (int, []fila) {
 					prev.u.CacheCreation = max(prev.u.CacheCreation, u.CacheCreation)
 					prev.u.CacheRead = max(prev.u.CacheRead, u.CacheRead)
 				} else {
-					msgs[clave] = &mensajeUso{dia, r.Message.Model, u}
+					msgs[clave] = &mensajeUso{ts.Local().Format("2006-01-02"), r.Message.Model, idSes, sub, u}
 				}
 			}
-			return nil
-		})
+		}
 	}
+
+	// 2) Totales diarios (solo días de la ventana) y por sesión (sesión completa).
 	agg := map[string]*fila{}
 	for _, m := range msgs {
-		k := m.dia + "|" + m.modelo
-		f, ok := agg[k]
+		s := ses(m.sesion)
+		um, ok := s.PorModelo[m.modelo]
+		if !ok {
+			um = &usoModelo{}
+			s.PorModelo[m.modelo] = um
+		}
+		um.Input += m.u.Input
+		um.Output += m.u.Output
+		um.CacheCreation += m.u.CacheCreation
+		um.CacheRead += m.u.CacheRead
+		s.Mensajes++
+		if m.sub {
+			s.MensajesSub++
+		}
+		if desde != "" && m.dia < desde {
+			continue
+		}
+		kf := m.dia + "|" + m.modelo
+		f, ok := agg[kf]
 		if !ok {
 			f = &fila{Dia: m.dia, Modelo: m.modelo}
-			agg[k] = f
+			agg[kf] = f
 		}
 		f.Input += m.u.Input
 		f.Output += m.u.Output
@@ -408,7 +534,20 @@ func recolectar(desde string, carpetas []string) (int, []fila) {
 		}
 		return out[i].Modelo < out[j].Modelo
 	})
-	return archivos, out
+
+	lista := make([]sesion, 0, len(sesiones))
+	for _, s := range sesiones {
+		if s.Mensajes == 0 {
+			continue
+		}
+		s.Titulo = valor(s.tituloPropio, s.tituloAI)
+		s.Carpeta = valor(s.Carpeta, s.cwdSub)
+		s.Inicio = s.ini.Format(time.RFC3339)
+		s.Fin = s.fin.Format(time.RFC3339)
+		lista = append(lista, *s)
+	}
+	sort.Slice(lista, func(i, j int) bool { return lista[i].Inicio < lista[j].Inicio })
+	return archivos, out, lista
 }
 
 func enviar(payload map[string]any) error {

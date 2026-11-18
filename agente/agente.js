@@ -13,7 +13,7 @@ const os = require('os');
 const crypto = require('crypto');
 const cp = require('child_process');
 
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 const DIR = __dirname;
 const ARGS = process.argv.slice(2);
 const DRY = ARGS.includes('--dry-run');
@@ -91,14 +91,14 @@ const ocultar = (c, objetivo) => !c ? 'sin sesion' : c === objetivo ? c : '***' 
 
 // ---------- Lectura de registros ----------
 
-function listarJsonl(dir, desdeMs, out) {
+function listarJsonl(dir, out) {
   let entradas;
   try { entradas = fs.readdirSync(dir, { withFileTypes: true }); } catch { return out; }
   for (const e of entradas) {
     const p = path.join(dir, e.name);
-    if (e.isDirectory()) listarJsonl(p, desdeMs, out);
+    if (e.isDirectory()) listarJsonl(p, out);
     else if (e.isFile() && e.name.endsWith('.jsonl')) {
-      try { if (fs.statSync(p).mtimeMs >= desdeMs) out.push(p); } catch { /* ignorar */ }
+      try { out.push({ p, mtime: fs.statSync(p).mtimeMs }); } catch { /* ignorar */ }
     }
   }
   return out;
@@ -109,47 +109,98 @@ function diaLocal(d) {
   return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`;
 }
 
+// <proyecto>/<id>.jsonl o <proyecto>/<id>/subagents/<agente>.jsonl
+function claveSesion(p) {
+  const dir = path.dirname(p);
+  return path.basename(dir).toLowerCase() === 'subagents' ? path.basename(path.dirname(dir)) : path.basename(p, '.jsonl');
+}
+
+// Ruta relativa al perfil del usuario (no se envía el nombre de usuario).
+function carpetaRelativa(cwd) {
+  if (!cwd) return '';
+  const rel = path.relative(os.homedir(), cwd);
+  if (!rel) return '~';
+  return rel.startsWith('..') || path.isAbsolute(rel) ? cwd : '~\\' + rel;
+}
+
 function recolectar(desdeDia, carpetas) {
   const desdeMs = desdeDia ? new Date(`${desdeDia}T00:00:00`).getTime() : 0;
-  const archivos = carpetas.flatMap(d => listarJsonl(d, desdeMs, []));
-  // Un mismo mensaje puede aparecer en varias líneas (y en archivos de subagentes):
-  // se deduplica por message.id + requestId quedándose con el máximo de cada contador.
-  const mensajes = new Map();
-  for (const file of archivos) {
-    let texto;
-    try { texto = fs.readFileSync(file, 'utf8'); } catch { continue; }
-    for (const linea of texto.split('\n')) {
-      if (!linea.includes('"usage"')) continue;
-      let e;
-      try { e = JSON.parse(linea); } catch { continue; }
-      const msg = e && e.message;
-      const u = msg && msg.usage;
-      if (!u || e.type !== 'assistant' || !msg.model || msg.model === '<synthetic>') continue;
-      const ts = new Date(e.timestamp);
-      if (isNaN(ts)) continue;
-      const dia = diaLocal(ts);
-      if (desdeDia && dia < desdeDia) continue;
-      const clave = (msg.id || e.requestId) ? `${msg.id || ''}:${e.requestId || ''}` : e.uuid;
-      const prev = mensajes.get(clave);
-      const cur = {
-        dia, modelo: msg.model,
-        input: u.input_tokens || 0,
-        output: u.output_tokens || 0,
-        cache_creation: u.cache_creation_input_tokens || 0,
-        cache_read: u.cache_read_input_tokens || 0,
-      };
-      if (!prev) mensajes.set(clave, cur);
-      else for (const k of ['input', 'output', 'cache_creation', 'cache_read']) prev[k] = Math.max(prev[k], cur[k]);
+  // Se relee la sesión completa si alguno de sus archivos cambió dentro de la ventana.
+  const grupos = new Map(), recientes = new Set();
+  for (const { p, mtime } of carpetas.flatMap(d => listarJsonl(d, []))) {
+    const k = claveSesion(p);
+    if (!grupos.has(k)) grupos.set(k, []);
+    grupos.get(k).push(p);
+    if (mtime >= desdeMs) recientes.add(k);
+  }
+  const mensajes = new Map(), sesiones = new Map();
+  const ses = id => {
+    if (!sesiones.has(id)) sesiones.set(id, { id, por_modelo: {}, mensajes: 0, mensajes_subagente: 0 });
+    return sesiones.get(id);
+  };
+  let archivos = 0;
+  for (const [k, rutas] of grupos) {
+    if (!recientes.has(k)) continue;
+    for (const file of rutas.sort()) {
+      let texto;
+      try { texto = fs.readFileSync(file, 'utf8'); } catch { continue; }
+      archivos++;
+      const esSub = /[\\/]subagents[\\/]/i.test(file);
+      for (const linea of texto.split('\n')) {
+        const esTitulo = linea.includes('"ai-title"') || linea.includes('"custom-title"');
+        if (!esTitulo && !linea.includes('"usage"')) continue;
+        let e;
+        try { e = JSON.parse(linea); } catch { continue; }
+        const idSes = e.sessionId || k;
+        if (e.type === 'ai-title' && e.aiTitle) { ses(idSes).tituloAI = e.aiTitle; continue; }
+        if (e.type === 'custom-title' && e.customTitle) { ses(idSes).tituloPropio = e.customTitle; continue; }
+        const msg = e.message;
+        const u = msg && msg.usage;
+        if (!u || e.type !== 'assistant' || !msg.model || msg.model === '<synthetic>') continue;
+        const ts = new Date(e.timestamp);
+        if (isNaN(ts)) continue;
+        const s = ses(idSes);
+        if (!s.ini || ts < s.ini) s.ini = ts;
+        if (!s.fin || ts > s.fin) s.fin = ts;
+        const sub = esSub || !!e.isSidechain;
+        if (e.cwd) {
+          if (!sub && !s.carpeta) s.carpeta = carpetaRelativa(e.cwd);
+          else if (!s.cwdSub) s.cwdSub = carpetaRelativa(e.cwd);
+        }
+        if (!s.entrypoint && e.entrypoint) s.entrypoint = e.entrypoint;
+        // Un mismo mensaje puede aparecer en varias líneas: se toma el máximo de cada contador.
+        const clave = (msg.id || e.requestId) ? `${msg.id || ''}:${e.requestId || ''}` : e.uuid;
+        const cur = {
+          dia: diaLocal(ts), modelo: msg.model, sesion: idSes, sub,
+          input: u.input_tokens || 0, output: u.output_tokens || 0,
+          cache_creation: u.cache_creation_input_tokens || 0, cache_read: u.cache_read_input_tokens || 0,
+        };
+        const prev = mensajes.get(clave);
+        if (!prev) mensajes.set(clave, cur);
+        else for (const c of ['input', 'output', 'cache_creation', 'cache_read']) prev[c] = Math.max(prev[c], cur[c]);
+      }
     }
   }
   const agg = new Map();
   for (const m of mensajes.values()) {
-    const k = `${m.dia}|${m.modelo}`;
-    let a = agg.get(k);
-    if (!a) agg.set(k, a = { dia: m.dia, modelo: m.modelo, input: 0, output: 0, cache_creation: 0, cache_read: 0, mensajes: 0 });
-    a.input += m.input; a.output += m.output; a.cache_creation += m.cache_creation; a.cache_read += m.cache_read; a.mensajes++;
+    const s = ses(m.sesion);
+    const um = s.por_modelo[m.modelo] || (s.por_modelo[m.modelo] = { input: 0, output: 0, cache_creation: 0, cache_read: 0 });
+    for (const c of ['input', 'output', 'cache_creation', 'cache_read']) um[c] += m[c];
+    s.mensajes++;
+    if (m.sub) s.mensajes_subagente++;
+    if (desdeDia && m.dia < desdeDia) continue;
+    const kf = `${m.dia}|${m.modelo}`;
+    let a = agg.get(kf);
+    if (!a) agg.set(kf, a = { dia: m.dia, modelo: m.modelo, input: 0, output: 0, cache_creation: 0, cache_read: 0, mensajes: 0 });
+    for (const c of ['input', 'output', 'cache_creation', 'cache_read']) a[c] += m[c];
+    a.mensajes++;
   }
-  return { archivos: archivos.length, filas: [...agg.values()].sort((a, b) => a.dia.localeCompare(b.dia)) };
+  const lista = [...sesiones.values()].filter(s => s.mensajes > 0).map(s => ({
+    id: s.id, inicio: s.ini.toISOString(), fin: s.fin.toISOString(),
+    titulo: s.tituloPropio || s.tituloAI || undefined, carpeta: s.carpeta || s.cwdSub || undefined,
+    entrypoint: s.entrypoint, por_modelo: s.por_modelo, mensajes: s.mensajes, mensajes_subagente: s.mensajes_subagente,
+  })).sort((a, b) => a.inicio.localeCompare(b.inicio));
+  return { archivos, filas: [...agg.values()].sort((a, b) => a.dia.localeCompare(b.dia) || a.modelo.localeCompare(b.modelo)), sesiones: lista };
 }
 
 // ---------- Envío (curl.exe: usa el almacén de certificados de Windows) ----------
@@ -204,20 +255,19 @@ function main() {
   const desde = completo ? null : diaLocal(new Date(Date.now() - (dias - 1) * 86400000));
 
   const id = identidad();
-  const { archivos, filas } = recolectar(desde, carpetas);
-  log(`maquina=${id.hostname} usuario=${id.usuario} id=${id.machine_id} archivos=${archivos} filas=${filas.length} desde=${desde || 'inicio'}`);
+  const { archivos, filas, sesiones } = recolectar(desde, carpetas);
+  log(`maquina=${id.hostname} usuario=${id.usuario} id=${id.machine_id} archivos=${archivos} filas=${filas.length} sesiones=${sesiones.length} desde=${desde || 'inicio'}`);
 
   if (DRY) {
-    console.log(JSON.stringify({ ...id, version: VERSION, filas }, null, 2));
+    console.log(JSON.stringify({ ...id, version: VERSION, filas, sesiones }, null, 2));
     return;
   }
 
-  // Lotes para no exceder el límite de la función.
-  const LOTE = 2000;
-  let total = 0;
-  for (let i = 0; i < Math.max(filas.length, 1); i += LOTE) {
-    enviar(cfg, { ...id, version: VERSION, filas: filas.slice(i, i + LOTE) });
-    total += filas.slice(i, i + LOTE).length;
+  // Lotes para no exceder el límite de la función: 2000 filas diarias y 300 sesiones por llamada.
+  const LF = 2000, LS = 300;
+  const total = filas.length;
+  for (let n = 0; n === 0 || n * LF < filas.length || n * LS < sesiones.length; n++) {
+    enviar(cfg, { ...id, version: VERSION, filas: filas.slice(n * LF, (n + 1) * LF), sesiones: sesiones.slice(n * LS, (n + 1) * LS) });
   }
   estado.historialEnviado = true;
   estado.ultimoEnvio = new Date().toISOString();

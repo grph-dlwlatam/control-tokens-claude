@@ -135,6 +135,39 @@ tbody tr:first-child .pos { background: var(--lime); color: #1e2c54; }
 footer { background: var(--navy); color: #b9c2d8; font-size: 13px; }
 footer div { max-width: 1240px; margin: 0 auto; padding: 14px 16px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
 footer b { color: #fff; font-weight: 600; }
+/* Alertas de cuadre */
+.alertas { display: grid; gap: 10px; margin-bottom: 18px; }
+.alerta { display: flex; gap: 12px; align-items: flex-start; background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--muted); border-radius: 6px; padding: 12px 16px; box-shadow: 0 1px 3px rgba(30,44,84,.06); }
+.alerta .ic { font-weight: 700; font-size: 16px; line-height: 1.3; width: 18px; text-align: center; }
+.alerta b { display: block; font-size: 15px; }
+.alerta span.d { color: var(--text-2); font-size: 13px; }
+.alerta.bad { border-left-color: var(--critical); } .alerta.bad .ic { color: var(--critical); }
+.alerta.warn { border-left-color: var(--warning); } .alerta.warn .ic { color: var(--warning); }
+.alerta.ok { border-left-color: var(--good); } .alerta.ok .ic { color: var(--good); }
+.alerta a { color: inherit; font-weight: 600; }
+/* Controles claros dentro de tarjetas */
+.seg-claro { border-color: var(--border); }
+.seg-claro button { color: var(--text-2); }
+.seg-claro button + button { border-left: 1px solid var(--border); }
+.seg-claro button[aria-pressed="true"] { background: var(--lime); color: #1e2c54; }
+.filtros { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px; }
+select, .fila-form input { background: var(--input-bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font: inherit; }
+select:focus, .fila-form input:focus { outline: 2px solid var(--lime); border-color: var(--lime); }
+.fila-form { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.fila-form input { flex: 1 1 200px; }
+.btn-s { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 6px; padding: 5px 10px; cursor: pointer; font: 600 13px 'Barlow', sans-serif; }
+.btn-s.primary { background: var(--lime); border-color: var(--lime); color: #1e2c54; }
+.btn-s.on-trabajo { background: var(--good); border-color: var(--good); color: #fff; }
+.btn-s.on-personal { background: var(--critical); border-color: var(--critical); color: #fff; }
+.btn-s:hover { filter: brightness(.95); }
+.flag { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .03em; padding: 2px 7px; border-radius: 999px; margin: 1px 3px 1px 0; border: 1px solid; white-space: nowrap; }
+.flag.h { color: var(--warning); border-color: var(--warning); }
+.flag.c { color: var(--critical); border-color: var(--critical); }
+.flag.x { color: var(--s3); border-color: var(--s3); }
+.chip { display: inline-block; font-size: 12px; padding: 1px 7px; border-radius: 4px; background: var(--grid); margin: 1px 3px 1px 0; }
+td.tit { white-space: normal; min-width: 220px; max-width: 340px; }
+td.tit .small { word-break: break-all; }
+
 /* Animaciones */
 @keyframes up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 .anim { animation: up .65s cubic-bezier(.2,.7,.2,1) both; }
@@ -217,16 +250,42 @@ tbody.animar tr { animation: rowin .45s ease both; }
   <main>
     <div class="kpis" id="kpis"></div>
 
+    <section class="alertas anim" id="alertas" aria-live="polite" style="animation-delay:.15s"></section>
+
     <div class="card anim" style="animation-delay:.25s">
-      <h2>Costo equivalente diario por persona (USD)</h2>
+      <h2>Costo equivalente diario por miembro (USD)</h2>
       <div class="legend" id="legend"></div>
       <div id="chart"><div class="tip" id="tip"></div></div>
     </div>
 
-    <div class="card anim" style="animation-delay:.35s">
-      <h2>Ranking por máquina</h2>
+    <div class="card anim" id="secEquipo" style="animation-delay:.3s">
+      <h2>Equipo · ranking por miembro</h2>
+      <div class="tbl-wrap"><table id="tEquipo"></table></div>
+      <form class="fila-form" id="fMiembro">
+        <input id="mNombre" placeholder="Nombre del miembro" required aria-label="Nombre del miembro">
+        <input id="mCorreo" type="email" placeholder="correo@dlwlatam.com (opcional)" aria-label="Correo del miembro">
+        <button class="btn-s primary">Agregar miembro</button>
+      </form>
+      <p class="note">Cada miembro puede tener varias máquinas. Asigna las máquinas en la tabla de abajo: el consumo de las máquinas sin asignar aparece como alerta de cuadre.</p>
+    </div>
+
+    <div class="card anim" id="secMaquinas" style="animation-delay:.35s">
+      <h2>Máquinas con la cuenta de Delaware</h2>
       <div class="tbl-wrap"><table id="tRanking"></table></div>
-      <p class="note">Escribe el nombre de la persona en cada máquina; se guarda al salir del campo. Máquinas con el mismo nombre se suman como una persona en el gráfico.</p>
+      <p class="note">Elige a qué miembro pertenece cada máquina; se guarda al instante.</p>
+    </div>
+
+    <div class="card anim" id="secSesiones" style="animation-delay:.4s">
+      <h2>Sesiones a revisar</h2>
+      <div class="filtros">
+        <div class="seg seg-claro" id="fSes" role="group" aria-label="Filtro de sesiones">
+          <button data-f="banderas" aria-pressed="true">Con banderas</button><button data-f="pendientes">Pendientes</button><button data-f="personal">Personales</button><button data-f="todas">Todas</button>
+        </div>
+        <select id="fSesMiembro" aria-label="Filtrar por miembro"></select>
+        <span class="small" id="sesResumen"></span>
+      </div>
+      <div class="tbl-wrap"><table id="tSesiones"></table></div>
+      <p class="note">El título lo genera Claude Code automáticamente para cada conversación; no se guardan prompts ni código. Banderas: horario fuera de L–V 8:00–19:00, sesión sin carpeta de proyecto (Escritorio, Descargas, carpeta de usuario) y costo muy superior a lo habitual.</p>
     </div>
 
     <div class="card anim" style="animation-delay:.45s">
@@ -324,19 +383,56 @@ async function todasLasFilas(path) {
 }
 
 // ---------- datos ----------
-let dias = 30, maquinas = [], consumo = [], animar = true;
+// Horario laboral para las banderas de sesión (hora local del navegador).
+const HORARIO = { desde: 8, hasta: 19, dias: [1, 2, 3, 4, 5] };
+let dias = 30, maquinas = [], consumo = [], miembros = [], sesiones = [], animar = true, avisoMigracion = false;
+let filtroSes = 'banderas', filtroMiembro = '';
+
+async function opcional(path) {
+  try { return await todasLasFilas(path); } catch (e) { avisoMigracion = true; console.warn(e.message); return []; }
+}
 async function cargar() {
   $('#subtitulo').textContent = 'Cargando…';
-  const filtro = dias ? `&dia=gte.${isoDia(new Date(Date.now() - (dias - 1) * 864e5))}` : '';
-  [maquinas, consumo] = await Promise.all([
+  const desde = dias ? isoDia(new Date(Date.now() - (dias - 1) * 864e5)) : '';
+  avisoMigracion = false;
+  [maquinas, consumo, miembros, sesiones] = await Promise.all([
     todasLasFilas('maquinas?select=*&order=machine_id'),
-    todasLasFilas(`consumo_diario?select=machine_id,dia,modelo,input_tokens,output_tokens,cache_creation_tokens,cache_read_tokens,mensajes${filtro}&order=dia,machine_id,modelo`),
+    todasLasFilas(`consumo_diario?select=machine_id,dia,modelo,input_tokens,output_tokens,cache_creation_tokens,cache_read_tokens,mensajes${desde ? '&dia=gte.' + desde : ''}&order=dia,machine_id,modelo`),
+    opcional('miembros?select=*&order=nombre'),
+    opcional(`sesiones?select=machine_id,session_id,inicio,fin,titulo,carpeta,entrypoint,por_modelo,mensajes,mensajes_subagente,revision,revisado_por${desde ? '&inicio=gte.' + desde : ''}&order=inicio.desc`),
   ]);
-  for (const r of consumo) r.costo = costo(r);
+  prepararDatos();
   $('#subtitulo').textContent = `Cuenta compartida del equipo · actualizado ${new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}`;
   animar = true; render();
 }
-const etiqueta = m => (m.persona && m.persona.trim()) || `${m.usuario_windows || '?'} @ ${m.hostname || '?'}`;
+function prepararDatos() {
+  for (const r of consumo) r.costo = costo(r);
+  for (const s of sesiones) {
+    s.costo = Object.entries(s.por_modelo || {}).reduce((a, [mo, u]) => a + costo({ modelo: mo, input_tokens: u.input || 0, output_tokens: u.output || 0, cache_creation_tokens: u.cache_creation || 0, cache_read_tokens: u.cache_read || 0 }), 0);
+  }
+  const costos = sesiones.map(s => s.costo).sort((a, b) => a - b);
+  const mediana = costos.length ? costos[Math.floor(costos.length / 2)] : 0;
+  for (const s of sesiones) s.banderas = banderas(s, mediana);
+}
+
+const miembroDe = m => m && m.miembro_id ? miembros.find(x => x.id === m.miembro_id) : null;
+const etiqueta = m => miembroDe(m)?.nombre || 'Sin asignar';
+const maquinaDe = id => maquinas.find(m => m.machine_id === id);
+
+// Banderas de posible uso personal (no prueban nada: la líder revisa el título y decide).
+function banderas(s, mediana) {
+  const out = [];
+  const ini = s.inicio ? new Date(s.inicio) : null;
+  if (ini) {
+    if (!HORARIO.dias.includes(ini.getDay())) out.push(['h', 'Fin de semana']);
+    else if (ini.getHours() < HORARIO.desde || ini.getHours() >= HORARIO.hasta) out.push(['h', 'Fuera de horario']);
+  }
+  const c = (s.carpeta || '').toLowerCase().replace(/\//g, '\\');
+  const sinProyecto = !c || c === '~' || /^~\\(onedrive[^\\]*\\)?(desktop|escritorio|downloads|descargas)(\\|$)/.test(c) || /\\(temp|tmp)(\\|$)/.test(c);
+  if (sinProyecto) out.push(['c', 'Sin carpeta de proyecto']);
+  if (s.costo > 5 && s.costo > mediana * 4) out.push(['x', 'Costo alto']);
+  return out;
+}
 
 // ---------- render ----------
 function render() {
@@ -351,30 +447,70 @@ function render() {
   }
   const ranking = [...porMaq.values()].sort((a, b) => b.costo - a.costo);
 
-  // personas (agrupa máquinas con el mismo nombre)
-  const porPersona = new Map();
-  for (const a of ranking) porPersona.set(etiqueta(a.m), (porPersona.get(etiqueta(a.m)) || 0) + a.costo);
-  const personas = [...porPersona.entries()].sort((a, b) => b[1] - a[1]).filter(p => p[1] > 0);
+  // Agregado por miembro (un miembro puede tener varias máquinas).
+  const porMiembro = new Map();
+  for (const mb of miembros) porMiembro.set(mb.id, { mb, costo: 0, maquinas: [], ultimo: null, personal: 0, nPersonal: 0 });
+  for (const a of ranking) {
+    const g = a.m.miembro_id && porMiembro.get(a.m.miembro_id); if (!g) continue;
+    g.costo += a.costo; g.maquinas.push(a.m);
+    if (a.m.ultimo_reporte && (!g.ultimo || a.m.ultimo_reporte > g.ultimo)) g.ultimo = a.m.ultimo_reporte;
+  }
+  let personalTotal = 0, nPersonal = 0;
+  for (const s of sesiones) {
+    if (s.revision !== 'personal') continue;
+    personalTotal += s.costo; nPersonal++;
+    const g = porMiembro.get(maquinaDe(s.machine_id)?.miembro_id); if (g) { g.personal += s.costo; g.nPersonal++; }
+  }
+  const equipo = [...porMiembro.values()].sort((a, b) => b.costo - a.costo);
+  const mapeado = equipo.reduce((x, g) => x + g.costo, 0);
+  const sinAsignar = ranking.filter(a => !miembroDe(a.m));
 
   // KPIs
-  const activas = ranking.filter(a => a.costo > 0).length;
-  const top = personas[0];
-  const fmtMaq = n => `${Math.round(n)} / ${maquinas.length}`;
+  const top = equipo.find(g => g.costo > 0);
   const kpis = [
     ['Costo equivalente', total.costo, usd, dias ? `últimos ${dias} días` : 'todo el historial'],
     ['Tokens procesados', total.tokens, tok, 'entrada + salida + caché'],
-    ['Máquinas con consumo', activas, fmtMaq, 'registradas en total'],
-    ['Mayor consumo', null, null, top ? `${usd(top[1])} · ${pct(top[1] / (total.costo || 1))} del total` : ''],
+    ['Miembros · máquinas', miembros.length, n => `${Math.round(n)} · ${maquinas.length}`, `${sinAsignar.length} máquina(s) sin asignar`],
+    ['Uso personal marcado', personalTotal, usd, `${nPersonal} sesión(es) · ${pct(personalTotal / (total.costo || 1))} del total`],
+    ['Mayor consumo', null, null, top ? `${usd(top.costo)} · ${pct(top.costo / (total.costo || 1))} del total` : ''],
   ];
   const kEl = $('#kpis');
   kEl.classList.toggle('animar', animar);
-  kEl.innerHTML = kpis.map(([l, v, f, d], i) => `<div class="kpi" style="animation-delay:${i * 80}ms"><div class="lbl">${l}</div><div class="val${f ? '' : ' txt'}">${f ? f(animar ? 0 : v) : (top ? esc(top[0]) : '—')}</div><div class="det">${d}</div></div>`).join('');
+  kEl.innerHTML = kpis.map(([l, v, f, d], i) => `<div class="kpi" style="animation-delay:${i * 80}ms"><div class="lbl">${l}</div><div class="val${f ? '' : ' txt'}">${f ? f(animar ? 0 : v) : (top ? esc(top.mb.nombre) : '—')}</div><div class="det">${d}</div></div>`).join('');
   if (animar) kEl.querySelectorAll('.val').forEach((el, i) => { if (kpis[i][2]) contar(el, kpis[i][1], kpis[i][2]); });
 
-  renderChart(personas.map(p => p[0]));
+  renderAlertas(total.costo, mapeado, sinAsignar, equipo);
+  const orden = [...equipo.filter(g => g.costo > 0).map(g => g.mb.nombre), ...(sinAsignar.some(a => a.costo > 0) ? ['Sin asignar'] : [])];
+  renderChart(orden);
+  renderEquipo(equipo, total.costo);
   renderRanking(ranking, total.costo);
+  renderSesiones();
   renderModelos();
   animar = false;
+}
+
+// Cuadre: todo lo gastado debe estar asignado a un miembro.
+function renderAlertas(totalCosto, mapeado, sinAsignar, equipo) {
+  const al = [];
+  const huerfano = totalCosto - mapeado;
+  if (avisoMigracion) al.push(['warn', '!', 'Falta ejecutar la migración 02 en Supabase', 'Sin ella no se ven miembros ni sesiones. Ejecuta supabase/02-sesiones.sql en el SQL Editor.']);
+  if (totalCosto > 0 && huerfano > 0.005) {
+    const conConsumo = sinAsignar.filter(a => a.costo > 0);
+    const nivel = huerfano / totalCosto > 0.05 ? 'bad' : 'warn';
+    al.push([nivel, '✕', `No cuadra: ${usd(huerfano)} (${pct(huerfano / totalCosto)}) del consumo no está asignado a ningún miembro`,
+      `Máquinas sin miembro: ${conConsumo.map(a => `${esc(a.m.hostname)} · ${esc(a.m.usuario_windows)} (${usd(a.costo)})`).join(', ')}. <a href="#secMaquinas">Asignarlas</a>`]);
+  } else if (totalCosto > 0) {
+    al.push(['ok', '✓', `Cuadra: el 100% del consumo (${usd(totalCosto)}) está asignado a miembros del equipo`, `${maquinas.length} máquina(s) en ${miembros.length} miembro(s).`]);
+  }
+  const nuevas = sinAsignar.filter(a => a.costo === 0 && a.m.primera_vez && Date.now() - new Date(a.m.primera_vez) < 7 * 864e5);
+  if (nuevas.length) al.push(['warn', '+', `${nuevas.length} máquina(s) nueva(s) sin asignar`, nuevas.map(a => esc(a.m.hostname) + ' · ' + esc(a.m.usuario_windows)).join(', ')]);
+  const callados = equipo.filter(g => g.mb.activo !== false && g.maquinas.length && (!g.ultimo || Date.now() - new Date(g.ultimo) > 72 * 36e5));
+  if (callados.length) al.push(['warn', '▲', `${callados.length} miembro(s) sin reportar hace más de 72 h`, callados.map(g => esc(g.mb.nombre)).join(', ') + ' · revisar si desinstalaron el agente o usan otra máquina.']);
+  const sinMaquina = equipo.filter(g => g.mb.activo !== false && !g.maquinas.length);
+  if (sinMaquina.length) al.push(['warn', '?', `${sinMaquina.length} miembro(s) sin ninguna máquina reportando`, sinMaquina.map(g => esc(g.mb.nombre)).join(', ') + ' · ¿instalaron el agente?']);
+  const pendientes = sesiones.filter(s => s.banderas.length && !s.revision);
+  if (pendientes.length) al.push(['warn', '⚑', `${pendientes.length} sesión(es) con banderas pendientes de revisión`, `Suman ${usd(pendientes.reduce((x, s) => x + s.costo, 0))}. <a href="#secSesiones">Revisar</a>`]);
+  $('#alertas').innerHTML = al.map(([n, ic, t, d]) => `<div class="alerta ${n}"><span class="ic" aria-hidden="true">${ic}</span><div><b>${t}</b><span class="d">${d}</span></div></div>`).join('');
 }
 
 // Cuenta ascendente para las cifras principales.
@@ -391,10 +527,11 @@ function contar(el, hasta, fmt, ms = 1100) {
 
 function renderChart(personasOrden) {
   const colores = ['--s1', '--s2', '--s3', '--s4', '--s5'];
-  const top5 = personasOrden.slice(0, 5);
-  const serie = p => top5.includes(p) ? p : 'Otros';
-  const series = [...top5, ...(personasOrden.length > 5 ? ['Otros'] : [])];
-  const color = s => `var(${s === 'Otros' ? '--s-otros' : colores[top5.indexOf(s)]})`;
+  const nombres = personasOrden.filter(p => p !== 'Sin asignar');
+  const top5 = nombres.slice(0, 5);
+  const serie = p => p === 'Sin asignar' ? p : (top5.includes(p) ? p : 'Otros');
+  const series = [...top5, ...(nombres.length > 5 ? ['Otros'] : []), ...(personasOrden.includes('Sin asignar') ? ['Sin asignar'] : [])];
+  const color = s => s === 'Sin asignar' ? 'var(--critical)' : `var(${s === 'Otros' ? '--s-otros' : colores[top5.indexOf(s)]})`;
   const persMaq = new Map(maquinas.map(m => [m.machine_id, etiqueta(m)]));
 
   // días del rango (incluye días sin consumo)
@@ -411,7 +548,7 @@ function renderChart(personasOrden) {
   const paso = nice(maxV / 4), yMax = Math.ceil(maxV / paso) * paso;
   const y = v => m.t + (H - m.t - m.b) * (1 - v / yMax);
   const bw = (W - m.l - m.r) / listaDias.length, barW = Math.max(2, Math.min(28, bw * 0.7));
-  let svg = `<svg class="${animar ? 'animar' : ''}" viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Costo equivalente diario por persona">`;
+  let svg = `<svg class="${animar ? 'animar' : ''}" viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Costo equivalente diario por miembro">`;
   for (let v = 0; v <= yMax + 1e-9; v += paso) svg += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/><text x="${m.l - 8}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${usd(v)}</text>`;
   const cadaN = Math.ceil(listaDias.length / Math.max(1, Math.floor((W - m.l) / 60)));
   listaDias.forEach((d, i) => {
@@ -459,15 +596,37 @@ function estadoReporte(ts) {
   return `<span class="st bad">✕ ${txt}</span>`;
 }
 
+function renderEquipo(equipo, totalCosto) {
+  const maxC = equipo[0]?.costo || 1;
+  $('#tEquipo').innerHTML = `<thead><tr><th>#</th><th>Miembro</th><th>Máquinas</th><th class="n">Costo eq.</th><th class="n">% del total</th><th class="n">Uso personal</th><th>Último reporte</th><th></th></tr></thead><tbody class="${animar ? 'animar' : ''}">` +
+    (equipo.length ? equipo.map((g, i) => `<tr style="animation-delay:${Math.min(i, 12) * 45}ms">
+        <td><span class="pos">${i + 1}</span></td>
+        <td><b>${esc(g.mb.nombre)}</b>${g.mb.correo ? `<div class="small">${esc(g.mb.correo)}</div>` : ''}</td>
+        <td>${g.maquinas.map(m => `<span class="chip">${esc(m.hostname)}</span>`).join('') || '<span class="small">ninguna</span>'}</td>
+        <td class="n"><b>${usd(g.costo)}</b></td>
+        <td class="n"><div class="share">${pct(g.costo / (totalCosto || 1))}<span class="bar"><i style="width:${(g.costo / maxC * 100).toFixed(1)}%"></i></span></div></td>
+        <td class="n">${g.nPersonal ? `<span class="st bad">${usd(g.personal)} · ${g.nPersonal}</span>` : '<span class="small">—</span>'}</td>
+        <td>${g.maquinas.length ? estadoReporte(g.ultimo) : '<span class="small">—</span>'}</td>
+        <td><button class="btn-s" data-borrar="${esc(g.mb.id)}" title="Eliminar miembro" aria-label="Eliminar a ${esc(g.mb.nombre)}">Eliminar</button></td>
+      </tr>`).join('') : '<tr><td colspan="8" class="small">Aún no hay miembros. Agrégalos abajo y luego asígnales sus máquinas.</td></tr>') + '</tbody>';
+  document.querySelectorAll('[data-borrar]').forEach(b => b.addEventListener('click', async () => {
+    const mb = miembros.find(x => x.id === b.dataset.borrar);
+    if (!confirm(`¿Eliminar a ${mb?.nombre}? Sus máquinas quedarán sin asignar.`)) return;
+    if (esDemo()) { miembros = miembros.filter(x => x.id !== mb.id); maquinas.forEach(m => { if (m.miembro_id === mb.id) m.miembro_id = null; }); return render(); }
+    try { await api(`miembros?id=eq.${encodeURIComponent(mb.id)}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); await cargar(); } catch (e) { alert('No se pudo eliminar: ' + e.message); }
+  }));
+}
+
 function renderRanking(ranking, totalCosto) {
   const maxC = ranking[0]?.costo || 1;
-  $('#tRanking').innerHTML = `<thead><tr><th>#</th><th>Persona</th><th>Equipo · usuario Windows</th><th class="n">Costo eq.</th><th class="n">% del total</th><th class="n">Salida</th><th class="n">Entrada + caché</th><th class="n">Mensajes</th><th>Modelo principal</th><th>Último reporte</th></tr></thead><tbody class="${animar ? 'animar' : ''}">` +
+  const opciones = id => `<option value="">— Sin asignar —</option>` + miembros.map(mb => `<option value="${esc(mb.id)}"${mb.id === id ? ' selected' : ''}>${esc(mb.nombre)}</option>`).join('');
+  $('#tRanking').innerHTML = `<thead><tr><th>#</th><th>Miembro</th><th>Equipo · usuario Windows</th><th class="n">Costo eq.</th><th class="n">% del total</th><th class="n">Salida</th><th class="n">Entrada + caché</th><th class="n">Mensajes</th><th>Modelo principal</th><th>Último reporte</th></tr></thead><tbody class="${animar ? 'animar' : ''}">` +
     ranking.map((a, i) => {
       const princ = [...a.modelos.entries()].sort((x, y) => y[1] - x[1])[0]?.[0] || '—';
       return `<tr style="animation-delay:${Math.min(i, 12) * 45}ms">
         <td><span class="pos">${i + 1}</span></td>
-        <td><input class="persona" data-id="${esc(a.m.machine_id)}" value="${esc(a.m.persona || '')}" placeholder="Asignar nombre" aria-label="Persona de ${esc(a.m.hostname)}"></td>
-        <td>${esc(a.m.hostname)} · ${esc(a.m.usuario_windows)}<div class="small">${esc(a.m.machine_id.slice(0, 8))}</div></td>
+        <td><select class="asignar" data-id="${esc(a.m.machine_id)}" aria-label="Miembro de ${esc(a.m.hostname)}">${opciones(a.m.miembro_id)}</select></td>
+        <td>${esc(a.m.hostname)} · ${esc(a.m.usuario_windows)}<div class="small">${esc(a.m.machine_id.slice(0, 8))}${a.m.version_agente ? ' · agente ' + esc(a.m.version_agente) : ''}</div></td>
         <td class="n"><b>${usd(a.costo)}</b></td>
         <td class="n"><div class="share">${pct(a.costo / (totalCosto || 1))}<span class="bar"><i style="width:${(a.costo / maxC * 100).toFixed(1)}%"></i></span></div></td>
         <td class="n">${tok(a.output)}</td>
@@ -477,17 +636,60 @@ function renderRanking(ranking, totalCosto) {
         <td>${estadoReporte(a.m.ultimo_reporte)}</td>
       </tr>`;
     }).join('') + '</tbody>';
-  document.querySelectorAll('.persona').forEach(inp => {
-    inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur(); });
-    inp.addEventListener('change', async () => {
-      try {
-        await api(`maquinas?machine_id=eq.${encodeURIComponent(inp.dataset.id)}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ persona: inp.value.trim() || null }) });
-        const m = maquinas.find(x => x.machine_id === inp.dataset.id); if (m) m.persona = inp.value.trim() || null;
-        inp.classList.add('saved'); setTimeout(render, 600);
-      } catch (e) { alert('No se pudo guardar: ' + e.message); }
-    });
-  });
+  document.querySelectorAll('.asignar').forEach(sel => sel.addEventListener('change', async () => {
+    const m = maquinaDe(sel.dataset.id), valor = sel.value || null;
+    try {
+      if (!esDemo()) await api(`maquinas?machine_id=eq.${encodeURIComponent(m.machine_id)}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ miembro_id: valor }) });
+      m.miembro_id = valor; render();
+    } catch (e) { alert('No se pudo guardar: ' + e.message); }
+  }));
 }
+
+function renderSesiones() {
+  const sel = $('#fSesMiembro');
+  sel.innerHTML = '<option value="">Todos los miembros</option><option value="__sin">Sin asignar</option>' + miembros.map(mb => `<option value="${esc(mb.id)}"${mb.id === filtroMiembro ? ' selected' : ''}>${esc(mb.nombre)}</option>`).join('');
+  if (filtroMiembro === '__sin') sel.value = '__sin';
+  const lista = sesiones.filter(s => {
+    const mid = maquinaDe(s.machine_id)?.miembro_id || '';
+    if (filtroMiembro === '__sin' ? mid : (filtroMiembro && mid !== filtroMiembro)) return false;
+    if (filtroSes === 'banderas') return s.banderas.length && !s.revision;
+    if (filtroSes === 'pendientes') return !s.revision;
+    if (filtroSes === 'personal') return s.revision === 'personal';
+    return true;
+  }).sort((a, b) => b.costo - a.costo);
+  const MAX = 150, vis = lista.slice(0, MAX);
+  $('#sesResumen').textContent = `${lista.length} sesión(es) · ${usd(lista.reduce((x, s) => x + s.costo, 0))}${lista.length > MAX ? ` · mostrando las ${MAX} más costosas` : ''}`;
+  const fh = d => d ? new Date(d).toLocaleString('es-PE', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
+  const dur = s => { const m = (new Date(s.fin) - new Date(s.inicio)) / 6e4; return !isFinite(m) ? '—' : m < 60 ? `${Math.max(1, Math.round(m))} min` : `${(m / 60).toFixed(1)} h`; };
+  $('#tSesiones').innerHTML = `<thead><tr><th>Inicio</th><th>Miembro</th><th>Título de la sesión · carpeta</th><th class="n">Duración</th><th class="n">Costo eq.</th><th>Banderas</th><th>Revisión</th></tr></thead><tbody>` +
+    (vis.length ? vis.map(s => {
+      const m = maquinaDe(s.machine_id);
+      const k = `${esc(s.machine_id)}|${esc(s.session_id)}`;
+      return `<tr>
+        <td>${fh(s.inicio)}</td>
+        <td>${esc(etiqueta(m))}<div class="small">${esc(m?.hostname || '')}</div></td>
+        <td class="tit"><b>${esc(s.titulo || '(sin título)')}</b><div class="small">${esc(s.carpeta || '—')}${s.mensajes_subagente ? ` · ${Math.round(s.mensajes_subagente / s.mensajes * 100)}% subagentes` : ''}</div></td>
+        <td class="n">${dur(s)}</td>
+        <td class="n"><b>${usd(s.costo)}</b></td>
+        <td>${s.banderas.map(([c, t]) => `<span class="flag ${c}">${t}</span>`).join('') || '<span class="small">—</span>'}</td>
+        <td style="white-space:nowrap"><button class="btn-s${s.revision === 'trabajo' ? ' on-trabajo' : ''}" data-rev="trabajo" data-k="${k}">Trabajo</button> <button class="btn-s${s.revision === 'personal' ? ' on-personal' : ''}" data-rev="personal" data-k="${k}">Personal</button>${s.revisado_por ? `<div class="small">${esc(s.revisado_por)}</div>` : ''}</td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="7" class="small">No hay sesiones para este filtro.</td></tr>') + '</tbody>';
+  document.querySelectorAll('[data-rev]').forEach(b => b.addEventListener('click', async () => {
+    const [mid, sid] = b.dataset.k.split('|');
+    const s = sesiones.find(x => x.machine_id === mid && x.session_id === sid);
+    const nueva = s.revision === b.dataset.rev ? null : b.dataset.rev; // segundo clic quita la marca
+    const quien = correoSesion();
+    try {
+      if (!esDemo()) await api(`sesiones?machine_id=eq.${encodeURIComponent(mid)}&session_id=eq.${encodeURIComponent(sid)}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ revision: nueva, revisado_por: nueva ? quien : null, revisado_en: nueva ? new Date().toISOString() : null }) });
+      s.revision = nueva; s.revisado_por = nueva ? quien : null; render();
+    } catch (e) { alert('No se pudo guardar: ' + e.message); }
+  }));
+}
+function correoSesion() {
+  try { return JSON.parse(atob(sesion.access.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).email || ''; } catch { return esDemo() ? 'lider@dlwlatam.com' : ''; }
+}
+const esDemo = () => location.hash === '#demo';
 
 function renderModelos() {
   const pm = new Map();
@@ -541,8 +743,22 @@ function terminal() {
 }
 function demo() {
   // Datos sintéticos para previsualizar (abrir dashboard.html#demo).
-  const nombres = ['Ana Torres', 'Luis Rojas', null, 'Carla Díaz', 'Pedro Vega', 'Rosa Medina', null];
-  maquinas = nombres.map((p, i) => ({ machine_id: 'demo' + String(i).padStart(20, '0'), hostname: `VM-LDS-${101 + i}`, usuario_windows: `analista${i + 1}_dw`, persona: p, ultimo_reporte: new Date(Date.now() - [0.3, 2, 30, 0.5, 80, 1, 5][i] * 36e5).toISOString() }));
+  // Ana tiene dos máquinas; VM-LDS-103 y VM-LDS-107 están sin asignar (dispara la alerta de cuadre).
+  miembros = ['Ana Torres', 'Luis Rojas', 'Carla Díaz', 'Pedro Vega', 'Rosa Medina'].map((n, i) => ({ id: 'm' + i, nombre: n, correo: n.split(' ')[0].toLowerCase() + '@dlwlatam.com', activo: true }));
+  const asignacion = ['m0', 'm1', null, 'm2', 'm3', 'm0', null];
+  maquinas = asignacion.map((mid, i) => ({ machine_id: 'demo' + String(i).padStart(20, '0'), hostname: `VM-LDS-${101 + i}`, usuario_windows: `analista${i + 1}_dw`, miembro_id: mid, version_agente: '2.1.0', primera_vez: new Date(Date.now() - (i === 6 ? 2 : 40) * 864e5).toISOString(), ultimo_reporte: new Date(Date.now() - [0.3, 2, 30, 0.5, 80, 1, 5][i] * 36e5).toISOString() }));
+  const titulos = [
+    ['Refactor servicio de facturación LDS', '~\\Proyectos\\lds-facturacion', 10], ['Casos de prueba portal clientes', '~\\Proyectos\\lds-portal', 11],
+    ['Planificar viaje a Cusco en diciembre', '~', 21], ['Tarea de estadística universidad', '~\\Desktop', 9], ['Corregir pipeline de despliegue QA', '~\\Proyectos\\lds-pipeline', 15],
+    ['Resumen de serie para ver el fin de semana', '~\\Downloads', 23], ['Migración consultas SQL reportes', '~\\Proyectos\\lds-reportes', 16], ['Optimizar CV y carta de presentación', '~\\Documents\\personal', 12],
+  ];
+  sesiones = [];
+  for (let k = 0; k < 40; k++) {
+    const [titulo, carpeta, hora] = titulos[k % titulos.length], m = maquinas[k % maquinas.length];
+    const ini = new Date(Date.now() - ((k * 17) % 28 + 1) * 864e5); ini.setHours(hora, (k * 13) % 60, 0, 0);
+    const f = 1 + (k % 5) * (k % 3 === 0 ? 3 : 1);
+    sesiones.push({ machine_id: m.machine_id, session_id: 's' + k, inicio: ini.toISOString(), fin: new Date(ini.getTime() + (20 + k * 7) * 6e4).toISOString(), titulo, carpeta, entrypoint: 'claude-vscode', mensajes: 40 * f, mensajes_subagente: k % 4 === 0 ? 12 * f : 0, por_modelo: { 'claude-opus-5-5': { input: 2e4 * f, output: 3e4 * f, cache_creation: 2e5 * f, cache_read: 3e6 * f } }, revision: k === 2 ? 'personal' : k === 0 ? 'trabajo' : null, revisado_por: k < 3 && k !== 1 ? 'lider@dlwlatam.com' : null });
+  }
   consumo = [];
   const mods = ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5'];
   for (let d = 0; d < 30; d++) maquinas.forEach((m, i) => mods.forEach((mo, j) => {
@@ -550,8 +766,8 @@ function demo() {
     if ((d + i) % 6 === 0) return;
     consumo.push({ machine_id: m.machine_id, dia: isoDia(new Date(Date.now() - (29 - d) * 864e5)), modelo: mo, input_tokens: Math.round(f * 2e4), output_tokens: Math.round(f * 4e4), cache_creation_tokens: Math.round(f * 3e5), cache_read_tokens: Math.round(f * 4e6), mensajes: Math.round(f * 40) });
   }));
-  if (dias) { const desde = isoDia(new Date(Date.now() - (dias - 1) * 864e5)); consumo = consumo.filter(r => r.dia >= desde); }
-  for (const r of consumo) r.costo = costo(r);
+  if (dias) { const desde = isoDia(new Date(Date.now() - (dias - 1) * 864e5)); consumo = consumo.filter(r => r.dia >= desde); sesiones = sesiones.filter(s => s.inicio.slice(0, 10) >= desde); }
+  prepararDatos();
   mostrar('dash'); $('#subtitulo').textContent = 'MODO DEMO · datos sintéticos'; animar = true; render();
 }
 async function iniciar() {
@@ -572,7 +788,23 @@ $('#rango').addEventListener('click', e => {
   if (location.hash === '#demo') return demo();
   cargar().catch(err => alert(err.message));
 });
-$('#bRefrescar').addEventListener('click', () => cargar().catch(err => alert(err.message)));
+$('#bRefrescar').addEventListener('click', () => esDemo() ? demo() : cargar().catch(err => alert(err.message)));
+$('#fSes').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  document.querySelectorAll('#fSes button').forEach(x => x.setAttribute('aria-pressed', x === b));
+  filtroSes = b.dataset.f; renderSesiones();
+});
+$('#fSesMiembro').addEventListener('change', e => { filtroMiembro = e.target.value; renderSesiones(); });
+$('#fMiembro').addEventListener('submit', async e => {
+  e.preventDefault();
+  const nombre = $('#mNombre').value.trim(), correo = $('#mCorreo').value.trim() || null;
+  if (!nombre) return;
+  try {
+    if (esDemo()) { miembros.push({ id: 'm' + Date.now(), nombre, correo, activo: true }); render(); }
+    else { await api('miembros', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ nombre, correo }) }); await cargar(); }
+    $('#mNombre').value = ''; $('#mCorreo').value = '';
+  } catch (err) { alert('No se pudo agregar: ' + err.message); }
+});
 $('#bSalir').addEventListener('click', () => { store.del('ct_sesion'); sesion = null; mostrar('login'); });
 let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => consumo.length && render(), 150); });
 setInterval(() => { if (sesion && !$('#vDash').hidden) cargar().catch(() => {}); }, 5 * 60 * 1000);

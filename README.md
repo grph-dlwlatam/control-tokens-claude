@@ -53,6 +53,27 @@ go build -trimpath -ldflags "-H windowsgui -s -w" -o ../dist/GestorTokens.exe .
 - Solo envía si Claude Code está conectado con la cuenta compartida (`cuentaObjetivo` en `main.go`).
 - No está firmado. Si SmartScreen, el antivirus o AppLocker lo bloquean, usar la versión `.cmd`.
 
+## Miembros, cuadre y sesiones (migración 02)
+
+Ejecutar una vez [supabase/02-sesiones.sql](supabase/02-sesiones.sql) en el SQL Editor (después de `esquema.sql`).
+
+- **Miembros:** cada persona es única y puede tener varias máquinas. La líder crea los miembros en el dashboard y asigna cada máquina a uno.
+- **Cuadre:** el dashboard alerta cuando lo gastado no coincide con lo asignado. Avisa de:
+  - máquinas sin miembro;
+  - máquinas nuevas;
+  - miembros que dejaron de reportar o que no tienen ninguna máquina.
+- **Sesiones a revisar:** por cada conversación el agente envía:
+  - el título que genera Claude Code;
+  - la carpeta, relativa al perfil del usuario;
+  - inicio y fin;
+  - tokens por modelo;
+  - el % de subagentes.
+
+  Nunca envía prompts ni código. Las banderas son: fuera de horario (L–V 8–19, configurable en `HORARIO` del HTML), sin carpeta de proyecto y costo alto. La líder marca cada sesión como *Trabajo* o *Personal*.
+- **Varias cuentas por PC:** si una máquina tiene su cuenta personal en `~\.claude` y la compartida en otra carpeta (`CLAUDE_CONFIG_DIR`, por ejemplo `~\.claude-dlw`), el agente solo suma las carpetas con la sesión de la cuenta compartida.
+
+Se recomienda informar al equipo de que el uso de la cuenta compartida se monitorea por proyecto, horario y título de sesión (Ley 29733).
+
 ## 4. Dashboard
 
 Doble clic en `dashboard.html`, iniciar sesión con el usuario del paso 1.4 y escribir el nombre de cada persona junto a su máquina. Las máquinas con el mismo nombre se suman como una sola persona.
