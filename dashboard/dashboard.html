@@ -40,7 +40,7 @@
 body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 'Barlow', Helvetica, Arial, sans-serif; }
 /* Cabecera institucional */
 .brand { background: var(--navy); color: #fff; border-bottom: 4px solid var(--lime); }
-.brand-in { max-width: 1240px; margin: 0 auto; padding: 14px 16px; display: flex; flex-wrap: wrap; gap: 14px 24px; align-items: center; justify-content: space-between; }
+.brand-in { max-width: 1680px; margin: 0 auto; padding: 14px 16px; display: flex; flex-wrap: wrap; gap: 14px 24px; align-items: center; justify-content: space-between; }
 .brand-id { display: flex; align-items: center; gap: 18px; min-width: 0; }
 .brand-id img { height: 34px; width: auto; display: block; }
 .brand-id .sep { width: 1px; height: 34px; background: rgba(255,255,255,.25); }
@@ -55,7 +55,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 'Ba
 .btn:hover, .seg button:hover:not([aria-pressed="true"]) { background: var(--lime); color: var(--navy); }
 .btn.primary { background: var(--lime); color: var(--navy); }
 .btn.primary:hover { background: var(--lime-strong); }
-main { max-width: 1240px; margin: 0 auto; padding: 24px 16px 40px; }
+main { max-width: 1680px; margin: 0 auto; padding: 24px 16px 40px; }
 /* Títulos de sección como el sitio: mayúsculas con subrayado verde */
 h2 { font-size: 14px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin: 0 0 14px; color: var(--text); }
 h2::after { content: ""; display: block; width: 36px; height: 3px; background: var(--lime); margin-top: 6px; border-radius: 2px; }
@@ -133,7 +133,7 @@ tbody tr:first-child .pos { background: var(--lime); color: #1e2c54; }
 .err { color: var(--critical); margin-top: 10px; min-height: 1em; font-size: 14px; }
 .sub { color: var(--text-2); margin: 4px 0 0; }
 footer { background: var(--navy); color: #b9c2d8; font-size: 13px; }
-footer div { max-width: 1240px; margin: 0 auto; padding: 14px 16px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+footer div { max-width: 1680px; margin: 0 auto; padding: 14px 16px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
 footer b { color: #fff; font-weight: 600; }
 /* Alertas de cuadre */
 .alertas { display: grid; gap: 10px; margin-bottom: 18px; }
@@ -196,6 +196,31 @@ dialog#ficha[open] { animation: up .35s cubic-bezier(.2,.7,.2,1); }
 #ficha h4 { margin: 16px 0 6px; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-2); }
 .ficha-svg { width: 100%; height: auto; display: block; }
 .ficha-maq { padding: 4px 0; border-bottom: 1px solid var(--grid); }
+
+/* Pestañas */
+.tabs { position: sticky; top: 0; z-index: 5; background: var(--surface); border-bottom: 1px solid var(--border); box-shadow: 0 2px 8px rgba(30,44,84,.06); }
+.tabs-in { max-width: 1680px; margin: 0 auto; padding: 0 16px; display: flex; gap: 4px; overflow-x: auto; }
+.tabs button { position: relative; background: none; border: 0; padding: 14px 18px 12px; font: 600 15px 'Barlow', sans-serif; color: var(--text-2); cursor: pointer; white-space: nowrap; border-bottom: 3px solid transparent; transition: color .2s, border-color .2s; }
+.tabs button:hover { color: var(--text); }
+.tabs button[aria-selected='true'] { color: var(--text); border-bottom-color: var(--lime); }
+.badge { display: inline-block; min-width: 20px; padding: 1px 7px; margin-left: 4px; border-radius: 999px; font-size: 12px; font-weight: 700; background: var(--grid); color: var(--text-2); }
+.badge:empty { display: none; }
+.badge.rojo { background: var(--critical); color: #fff; }
+.badge.ambar { background: var(--warning); color: #1e2c54; }
+.panel[hidden] { display: none !important; }
+
+/* Distribución en pantallas anchas */
+.fila-2, .fila-2b { display: grid; gap: 18px; margin-bottom: 18px; }
+.fila-2 > .card, .fila-2b > .card, .fila-2 > .alertas { margin-bottom: 0; }
+.fila-2 > .alertas { align-content: start; }
+@media (min-width: 1200px) {
+  .fila-2 { grid-template-columns: minmax(340px, 1fr) 2.3fr; align-items: stretch; }
+  .fila-2:has(> .alertas:empty) { grid-template-columns: 1fr; }
+  .fila-2b { grid-template-columns: 1fr 1fr; align-items: start; }
+  .fila-2 .alerta { padding: 10px 14px; }
+  .fila-2 .alerta b { font-size: 14px; }
+  .fila-2 .alerta span.d { font-size: 12.5px; }
+}
 
 /* Animaciones */
 @keyframes up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
@@ -276,61 +301,99 @@ tbody.animar tr { animation: rowin .45s ease both; }
     </div>
   </header>
 
+  <nav class="tabs" role="tablist" aria-label="Secciones del panel">
+    <div class="tabs-in">
+      <button role="tab" data-tab="resumen" aria-selected="true">Resumen</button>
+      <button role="tab" data-tab="equipo" aria-selected="false">Equipo <span class="badge" id="bEquipo"></span></button>
+      <button role="tab" data-tab="maquinas" aria-selected="false">Máquinas <span class="badge" id="bMaquinas"></span></button>
+      <button role="tab" data-tab="sesiones" aria-selected="false">Sesiones <span class="badge" id="bSesiones"></span></button>
+      <button role="tab" data-tab="ajustes" aria-selected="false">Ajustes</button>
+    </div>
+  </nav>
+
   <main>
-    <div class="kpis" id="kpis"></div>
+    <!-- ===== Resumen ===== -->
+    <div class="panel" data-panel="resumen" role="tabpanel">
+      <div class="kpis" id="kpis"></div>
 
-    <section class="alertas anim" id="alertas" aria-live="polite" style="animation-delay:.15s"></section>
-
-    <div class="card anim" style="animation-delay:.25s">
-      <h2>Costo equivalente diario por miembro (USD)</h2>
-      <div class="legend" id="legend"></div>
-      <div id="chart"><div class="tip" id="tip"></div></div>
-    </div>
-
-    <div class="card anim" id="secEquipo" style="animation-delay:.3s">
-      <h2>Equipo · ranking por miembro</h2>
-      <div class="tbl-wrap"><table id="tEquipo"></table></div>
-      <form class="fila-form" id="fMiembro">
-        <input id="mNombre" placeholder="Nombre del miembro" required aria-label="Nombre del miembro">
-        <input id="mCorreo" type="email" placeholder="correo@dlwlatam.com (opcional)" aria-label="Correo del miembro">
-        <button class="btn-s primary">Agregar miembro</button>
-      </form>
-      <p class="note">Cada miembro puede tener varias máquinas. Asigna las máquinas en la tabla de abajo: el consumo de las máquinas sin asignar aparece como alerta de cuadre.</p>
-    </div>
-
-    <div class="card anim" id="secMaquinas" style="animation-delay:.35s">
-      <h2>Máquinas con la cuenta de Delaware</h2>
-      <div class="tbl-wrap"><table id="tRanking"></table></div>
-      <p class="note">Elige a qué miembro pertenece cada máquina; se guarda al instante.</p>
-    </div>
-
-    <div class="card anim" id="secSesiones" style="animation-delay:.4s">
-      <h2>Sesiones a revisar</h2>
-      <div class="filtros">
-        <div class="seg seg-claro" id="fSes" role="group" aria-label="Filtro de sesiones">
-          <button data-f="banderas" aria-pressed="true">Con banderas</button><button data-f="pendientes">Pendientes</button><button data-f="personal">Personales</button><button data-f="todas">Todas</button>
+      <div class="fila-2">
+        <section class="alertas anim" id="alertas" aria-live="polite" style="animation-delay:.15s"></section>
+        <div class="card anim" style="animation-delay:.25s">
+          <h2>Costo equivalente diario por miembro (USD)</h2>
+          <div class="legend" id="legend"></div>
+          <div id="chart"><div class="tip" id="tip"></div></div>
         </div>
-        <select id="fSesMiembro" aria-label="Filtrar por miembro"></select>
-        <input id="fSesBuscar" type="search" placeholder="Buscar título, carpeta o miembro…" aria-label="Buscar sesiones">
-        <span class="small" id="sesResumen"></span>
       </div>
-      <div class="tbl-wrap"><table id="tSesiones"></table></div>
-      <p class="note">El título lo genera Claude Code automáticamente para cada conversación; no se guardan prompts ni código. Banderas: horario fuera de L–V 8:00–19:00, sesión sin carpeta de proyecto (Escritorio, Descargas, carpeta de usuario) y costo muy superior a lo habitual.</p>
+
+      <div class="fila-2b">
+        <div class="card anim" style="animation-delay:.32s">
+          <h2>Top 5 miembros</h2>
+          <div class="tbl-wrap"><table id="tTop"></table></div>
+          <p class="note"><button class="link-s" data-ir="equipo">Ver todo el equipo →</button></p>
+        </div>
+        <div class="card anim" style="animation-delay:.38s">
+          <h2>Consumo por modelo</h2>
+          <div class="tbl-wrap"><table id="tModelos"></table></div>
+          <p class="note">Costo equivalente = lo que costaría a precio de API (USD por millón de tokens; escritura de caché a 1,25× la entrada). Con suscripción no se cobra por token: sirve para comparar quién consume más de la cuota compartida.</p>
+        </div>
+      </div>
     </div>
 
-    <details class="card anim ajustes" id="secAjustes" style="animation-delay:.42s">
-      <summary><h2>Ajustes de detección</h2></summary>
-      <label for="aPalabras" class="lbl-a">Palabras clave de uso personal <span class="small">(separadas por coma; sin tildes da igual)</span></label>
-      <textarea id="aPalabras" rows="3"></textarea>
-      <div class="fila-form"><button class="btn-s primary" id="aGuardar">Guardar palabras</button><span class="small" id="aEstado"></span></div>
-      <label class="lbl-a">Carpetas de trabajo conocidas <span class="small">(sus sesiones no levantan banderas de carpeta ni de horario)</span></label>
-      <div id="aCarpetas"></div>
-    </details>
+    <!-- ===== Equipo ===== -->
+    <div class="panel" data-panel="equipo" role="tabpanel" hidden>
+      <div class="card anim" id="secEquipo">
+        <h2>Equipo · ranking por miembro</h2>
+        <div class="tbl-wrap"><table id="tEquipo"></table></div>
+        <form class="fila-form" id="fMiembro">
+          <input id="mNombre" placeholder="Nombre del miembro" required aria-label="Nombre del miembro">
+          <input id="mCorreo" type="email" placeholder="correo@dlwlatam.com (opcional)" aria-label="Correo del miembro">
+          <button class="btn-s primary">Agregar miembro</button>
+        </form>
+        <p class="note">Cada miembro puede tener varias máquinas; se asignan en la pestaña Máquinas. Haz clic en un nombre para ver su ficha.</p>
+      </div>
+    </div>
 
-    <div class="card anim" style="animation-delay:.45s">
-      <h2>Consumo por modelo</h2>
-      <div class="tbl-wrap"><table id="tModelos"></table></div>
-      <p class="note">El costo equivalente es lo que costaría ese consumo a precio de API (USD por millón de tokens, escritura de caché a 1,25× la entrada). Con suscripción no se cobra por token: sirve para comparar quién consume más de la cuota compartida.</p>
+    <!-- ===== Máquinas ===== -->
+    <div class="panel" data-panel="maquinas" role="tabpanel" hidden>
+      <div class="card anim" id="secMaquinas">
+        <h2>Máquinas con la cuenta de Delaware</h2>
+        <div class="tbl-wrap"><table id="tRanking"></table></div>
+        <p class="note">Elige a qué miembro pertenece cada máquina (o crea uno con «+ Nuevo miembro…»); se guarda al instante. El consumo de máquinas sin asignar aparece como alerta de cuadre.</p>
+      </div>
+    </div>
+
+    <!-- ===== Sesiones ===== -->
+    <div class="panel" data-panel="sesiones" role="tabpanel" hidden>
+      <div class="card anim" id="secSesiones">
+        <h2>Sesiones a revisar</h2>
+        <div class="filtros">
+          <div class="seg seg-claro" id="fSes" role="group" aria-label="Filtro de sesiones">
+            <button data-f="banderas" aria-pressed="true">Con banderas</button><button data-f="pendientes">Pendientes</button><button data-f="personal">Personales</button><button data-f="todas">Todas</button>
+          </div>
+          <select id="fSesMiembro" aria-label="Filtrar por miembro"></select>
+          <input id="fSesBuscar" type="search" placeholder="Buscar título, carpeta o miembro…" aria-label="Buscar sesiones">
+          <span class="small" id="sesResumen"></span>
+        </div>
+        <div class="tbl-wrap"><table id="tSesiones"></table></div>
+        <p class="note">El título lo genera Claude Code automáticamente para cada conversación; no se guardan prompts ni código. Banderas: título con palabras no laborales, horario fuera de L–V 8:00–19:00, sesión sin carpeta de proyecto (Escritorio, Descargas, carpeta de usuario) y costo muy superior a lo habitual.</p>
+      </div>
+    </div>
+
+    <!-- ===== Ajustes ===== -->
+    <div class="panel" data-panel="ajustes" role="tabpanel" hidden>
+      <div class="fila-2b">
+        <div class="card anim ajustes" id="secAjustes">
+          <h2>Palabras clave de uso personal</h2>
+          <label for="aPalabras" class="lbl-a">Separadas por coma; las tildes y mayúsculas no importan. Un título que contenga alguna levanta la bandera «Título no laboral».</label>
+          <textarea id="aPalabras" rows="6"></textarea>
+          <div class="fila-form"><button class="btn-s primary" id="aGuardar">Guardar palabras</button><span class="small" id="aEstado"></span></div>
+        </div>
+        <div class="card anim">
+          <h2>Carpetas de trabajo conocidas</h2>
+          <p class="lbl-a">Las sesiones en estas carpetas (y subcarpetas) no levantan banderas de carpeta ni de horario. Se agregan desde la pestaña Sesiones con «marcar carpeta como de trabajo».</p>
+          <div id="aCarpetas"></div>
+        </div>
+      </div>
     </div>
   </main>
 
@@ -554,6 +617,11 @@ function render() {
   const orden = [...equipo.filter(g => g.costo > 0).map(g => g.mb.nombre), ...(sinAsignar.some(a => a.costo > 0) ? ['Sin asignar'] : [])];
   renderChart(orden);
   renderEquipo(equipo, total.costo);
+  renderTop(equipo, total.costo);
+  const pend = sesiones.filter(s => s.banderas.length && !s.revision).length;
+  badge('#bEquipo', miembros.length || '', '');
+  badge('#bMaquinas', sinAsignar.length ? sinAsignar.length + ' sin asignar' : (maquinas.length || ''), sinAsignar.length ? 'rojo' : '');
+  badge('#bSesiones', pend || '', pend ? 'ambar' : '');
   renderRanking(ranking, total.costo);
   renderSesiones();
   renderModelos();
@@ -569,7 +637,7 @@ function renderAlertas(totalCosto, mapeado, sinAsignar, equipo) {
     const conConsumo = sinAsignar.filter(a => a.costo > 0);
     const nivel = huerfano / totalCosto > 0.05 ? 'bad' : 'warn';
     al.push([nivel, '✕', `No cuadra: ${usd(huerfano)} (${pct(huerfano / totalCosto)}) del consumo no está asignado a ningún miembro`,
-      `Máquinas sin miembro: ${conConsumo.map(a => `${esc(a.m.hostname)} · ${esc(a.m.usuario_windows)} (${usd(a.costo)})`).join(', ')}. <a href="#secMaquinas">Asignarlas</a>`]);
+      `Máquinas sin miembro: ${conConsumo.map(a => `${esc(a.m.hostname)} · ${esc(a.m.usuario_windows)} (${usd(a.costo)})`).join(', ')}. <a href="#" data-ir="maquinas">Asignarlas</a>`]);
   } else if (totalCosto > 0) {
     al.push(['ok', '✓', `Cuadra: el 100% del consumo (${usd(totalCosto)}) está asignado a miembros del equipo`, `${maquinas.length} máquina(s) en ${miembros.length} miembro(s).`]);
   }
@@ -580,7 +648,7 @@ function renderAlertas(totalCosto, mapeado, sinAsignar, equipo) {
   const sinMaquina = equipo.filter(g => g.mb.activo !== false && !g.maquinas.length);
   if (sinMaquina.length) al.push(['warn', '?', `${sinMaquina.length} miembro(s) sin ninguna máquina reportando`, sinMaquina.map(g => esc(g.mb.nombre)).join(', ') + ' · ¿instalaron el agente?']);
   const pendientes = sesiones.filter(s => s.banderas.length && !s.revision);
-  if (pendientes.length) al.push(['warn', '⚑', `${pendientes.length} sesión(es) con banderas pendientes de revisión`, `Suman ${usd(pendientes.reduce((x, s) => x + s.costo, 0))}. <a href="#secSesiones">Revisar</a>`]);
+  if (pendientes.length) al.push(['warn', '⚑', `${pendientes.length} sesión(es) con banderas pendientes de revisión`, `Suman ${usd(pendientes.reduce((x, s) => x + s.costo, 0))}. <a href="#" data-ir="sesiones">Revisar</a>`]);
   $('#alertas').innerHTML = al.map(([n, ic, t, d]) => `<div class="alerta ${n}"><span class="ic" aria-hidden="true">${ic}</span><div><b>${t}</b><span class="d">${d}</span></div></div>`).join('');
 }
 
@@ -782,6 +850,30 @@ function renderSesiones() {
   renderAjustes();
 }
 
+// ---------- pestañas ----------
+let tabActiva = 'resumen';
+function irA(tab) {
+  tabActiva = tab;
+  document.querySelectorAll('.tabs [data-tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === tab));
+  document.querySelectorAll('[data-panel]').forEach(p => { p.hidden = p.dataset.panel !== tab; });
+  store.set('ct_tab', tab);
+  if (tab === 'resumen' && consumo.length) render(); // el gráfico necesita el ancho real del panel visible
+  scrollTo({ top: 0, behavior: 'smooth' });
+}
+function badge(sel, texto, clase) { const el = $(sel); el.textContent = texto; el.className = 'badge' + (clase ? ' ' + clase : ''); }
+
+function renderTop(equipo, totalCosto) {
+  const top = equipo.filter(g => g.costo > 0).slice(0, 5), maxC = top[0]?.costo || 1;
+  const fila = (g, i) => '<tr><td><span class="pos">' + (i + 1) + '</span></td>' +
+    '<td><button class="link-m" data-ficha="' + esc(g.mb.id) + '">' + esc(g.mb.nombre) + '</button><div class="small">' + g.maquinas.length + ' máquina(s)</div></td>' +
+    '<td class="n"><b>' + usd(g.costo) + '</b></td>' +
+    '<td class="n"><div class="share">' + pct(g.costo / (totalCosto || 1)) + '<span class="bar"><i style="width:' + (g.costo / maxC * 100).toFixed(1) + '%"></i></span></div></td>' +
+    '<td class="n">' + (g.nPersonal ? '<span class="st bad">' + usd(g.personal) + '</span>' : '—') + '</td></tr>';
+  $('#tTop').innerHTML = '<thead><tr><th>#</th><th>Miembro</th><th class="n">Costo eq.</th><th class="n">% del total</th><th class="n">Personal</th></tr></thead><tbody>' +
+    (top.length ? top.map(fila).join('') : '<tr><td colspan="5" class="small">Aún no hay miembros con consumo asignado.</td></tr>') + '</tbody>';
+  document.querySelectorAll('#tTop [data-ficha]').forEach(b => b.addEventListener('click', () => abrirFicha(b.dataset.ficha)));
+}
+
 // ---------- ajustes: palabras clave y carpetas de trabajo ----------
 function renderAjustes() {
   const ta = $('#aPalabras');
@@ -832,7 +924,7 @@ function abrirFicha(id) {
   const dlg = $('#ficha');
   dlg.showModal();
   $('#fichaCerrar').onclick = () => dlg.close();
-  $('#fichaVerSes').onclick = () => { dlg.close(); filtroMiembro = id; filtroSes = 'todas'; document.querySelectorAll('#fSes button').forEach(x => x.setAttribute('aria-pressed', x.dataset.f === 'todas')); renderSesiones(); $('#secSesiones').scrollIntoView({ behavior: 'smooth' }); };
+  $('#fichaVerSes').onclick = () => { dlg.close(); filtroMiembro = id; filtroSes = 'todas'; document.querySelectorAll('#fSes button').forEach(x => x.setAttribute('aria-pressed', x.dataset.f === 'todas')); renderSesiones(); irA('sesiones'); };
 }
 function correoSesion() {
   try { return JSON.parse(atob(sesion.access.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).email || ''; } catch { return esDemo() ? 'lider@dlwlatam.com' : ''; }
@@ -942,6 +1034,9 @@ $('#fSes').addEventListener('click', e => {
   document.querySelectorAll('#fSes button').forEach(x => x.setAttribute('aria-pressed', x === b));
   filtroSes = b.dataset.f; renderSesiones();
 });
+document.querySelector('.tabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) irA(b.dataset.tab); });
+document.addEventListener('click', e => { const a = e.target.closest('[data-ir]'); if (a) { e.preventDefault(); irA(a.dataset.ir); } });
+irA(store.get('ct_tab') || 'resumen');
 $('#fSesMiembro').addEventListener('change', e => { filtroMiembro = e.target.value; renderSesiones(); });
 let tb; $('#fSesBuscar').addEventListener('input', e => { clearTimeout(tb); tb = setTimeout(() => { busqueda = normalizar(e.target.value); renderSesiones(); }, 200); });
 $('#aGuardar').addEventListener('click', async () => {
