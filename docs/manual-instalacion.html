@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Manual de instalación · Gestor de Tokens · DLW Latam</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4; margin: 0; }
+  :root { --navy: #1e2c54; --navy-2: #2a3d72; --lime: #89d021; --lime-d: #4f7a0e; --text: #1e2c54; --text-2: #4a5677; --muted: #7d8699; --bg: #f4f6fa; --border: #dfe4ee; --red: #c93434; --amber: #d99a00; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #fff; }
+  body { font-family: 'Barlow', Helvetica, Arial, sans-serif; color: var(--text); font-size: 10.5pt; line-height: 1.5; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .pagina { width: 210mm; height: 297mm; position: relative; overflow: hidden; page-break-after: always; break-after: page; background: #fff; }
+  .pagina:last-child { page-break-after: auto; break-after: auto; }
+  b, strong { font-weight: 700; }
+  p { margin: 0 0 3mm; }
+  code { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 8.6pt; background: var(--bg); border: 1px solid var(--border); border-radius: 1mm; padding: .2mm 1.2mm; }
+
+  /* ---------- Portada ---------- */
+  .portada { background: linear-gradient(160deg, #24356a 0%, var(--navy) 55%, #18244a 100%); color: #fff; padding: 24mm 22mm 0; }
+  .portada::before { content: ""; position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px); background-size: 12mm 12mm; }
+  .portada .brillo { position: absolute; width: 140mm; height: 140mm; border-radius: 50%; background: var(--lime); filter: blur(80px); opacity: .22; right: -60mm; top: 40mm; }
+  .portada > * { position: relative; }
+  .portada .logo { display: block; height: 16mm; }
+  .portada .eyebrow { display: block; margin-top: 30mm; color: var(--lime); font-weight: 700; font-size: 10pt; letter-spacing: .22em; text-transform: uppercase; }
+  .portada h1 { font-size: 44pt; line-height: 1.02; margin: 4mm 0 6mm; font-weight: 800; letter-spacing: -.015em; }
+  .portada h1 em { font-style: normal; color: var(--lime); }
+  .portada .bajada { font-size: 14pt; line-height: 1.45; color: #c9d1e6; max-width: 135mm; margin: 0; }
+  .portada .barra { width: 30mm; height: 1.6mm; background: var(--lime); margin: 11mm 0 9mm; }
+  .portada .meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5mm 8mm; font-size: 10.5pt; max-width: 166mm; }
+  .portada .meta small { display: block; color: #93a5cc; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; font-size: 7.5pt; margin-bottom: .6mm; }
+  .portada .indice { position: absolute; left: 22mm; right: 22mm; bottom: 26mm; border-top: 1px solid rgba(255,255,255,.18); padding-top: 6mm; }
+  .portada .indice h4 { margin: 0 0 3mm; color: #93a5cc; font-size: 7.5pt; letter-spacing: .14em; text-transform: uppercase; }
+  .portada .indice ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 2.2mm 10mm; }
+  .portada .indice li { display: flex; align-items: baseline; gap: 3mm; font-size: 10.5pt; color: #e3e8f4; }
+  .portada .indice li span { color: var(--lime); font-weight: 800; font-size: 9pt; min-width: 6mm; }
+  .portada .indice li i { flex: 1; border-bottom: 1px dotted rgba(255,255,255,.25); transform: translateY(-1mm); }
+  .portada .indice li em { font-style: normal; color: #93a5cc; font-size: 9pt; }
+  .portada .pie { position: absolute; left: 22mm; right: 22mm; bottom: 12mm; display: flex; justify-content: space-between; font-size: 8.5pt; color: #93a5cc; }
+
+  /* ---------- Páginas internas ---------- */
+  .cab { height: 17mm; padding: 0 18mm; display: flex; align-items: center; justify-content: space-between; background: var(--navy); color: #fff; border-bottom: 1.2mm solid var(--lime); }
+  .cab img { height: 7.5mm; display: block; }
+  .cab span { font-size: 8.5pt; color: #c9d1e6; font-weight: 600; letter-spacing: .02em; }
+  .cab span b { color: #fff; }
+  .cuerpo { padding: 11mm 18mm 0; }
+  .pp { position: absolute; left: 18mm; right: 18mm; bottom: 9mm; display: flex; justify-content: space-between; align-items: center; font-size: 8pt; color: var(--muted); border-top: 1px solid var(--border); padding-top: 3mm; }
+  .pp b { color: var(--navy); font-weight: 700; }
+
+  .seccion { display: block; color: var(--lime-d); font-weight: 800; font-size: 8.5pt; letter-spacing: .18em; text-transform: uppercase; margin-bottom: 1.5mm; }
+  h2 { font-size: 19pt; line-height: 1.15; margin: 0 0 2.5mm; font-weight: 800; letter-spacing: -.005em; }
+  h2::after { content: ""; display: block; width: 12mm; height: 1mm; background: var(--lime); margin-top: 3mm; }
+  h3 { font-size: 12pt; margin: 7mm 0 2.5mm; font-weight: 700; }
+  .lead { font-size: 11.5pt; color: var(--text-2); margin-bottom: 7mm; max-width: 165mm; }
+
+  .dos { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; }
+  .tarjeta { border: 1px solid var(--border); border-radius: 2.5mm; padding: 5mm 5.5mm; background: #fff; }
+  .tarjeta.si { border-top: 1.2mm solid var(--lime); }
+  .tarjeta.no { border-top: 1.2mm solid var(--red); }
+  .tarjeta.navy { border-top: 1.2mm solid var(--navy); }
+  .tarjeta h4 { margin: 0 0 2.5mm; font-size: 9.5pt; letter-spacing: .1em; text-transform: uppercase; }
+  .tarjeta.si h4 { color: var(--lime-d); } .tarjeta.no h4 { color: var(--red); } .tarjeta.navy h4 { color: var(--navy); }
+  .tarjeta ul { margin: 0; padding-left: 4.5mm; } .tarjeta li { margin: 1.2mm 0; }
+  .tarjeta li::marker { color: var(--muted); }
+
+  .reqs { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; }
+  .req { display: flex; gap: 4mm; align-items: flex-start; border: 1px solid var(--border); border-radius: 2.5mm; padding: 4mm 4.5mm; }
+  .req .ic { flex: 0 0 8mm; height: 8mm; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--bg); color: var(--navy); font-weight: 800; font-size: 10.5pt; }
+  .req b { display: block; font-size: 11pt; line-height: 1.3; margin-bottom: .8mm; }
+  .req small { display: block; color: var(--text-2); font-size: 9.5pt; line-height: 1.45; }
+  .req.destacado { grid-column: 1 / -1; background: linear-gradient(90deg, rgba(137,208,33,.15), rgba(137,208,33,.03)); border-color: rgba(137,208,33,.65); padding: 5mm; }
+  .req.destacado .ic { flex-basis: 10mm; height: 10mm; background: var(--lime); font-size: 13pt; }
+  .req.destacado b { font-size: 13.5pt; }
+
+  .seccion + .paso { margin-top: 4mm; }
+  .paso { display: grid; grid-template-columns: 14mm 1fr; gap: 5mm; margin-bottom: 8mm; }
+  .num { width: 14mm; height: 14mm; border-radius: 50%; background: var(--navy); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 17pt; box-shadow: 0 0 0 1.2mm #e3f3c9; }
+  .paso h3 { margin: 2mm 0 2mm; font-size: 14pt; }
+  .paso .tag { display: block; color: var(--muted); font-size: 8pt; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+
+  .enlace { display: flex; align-items: center; gap: 5mm; margin: 3mm 0 4mm; padding: 4.5mm 5.5mm; border-radius: 2.5mm; background: var(--navy); color: #fff; text-decoration: none; }
+  .enlace .flecha { flex: 0 0 11mm; height: 11mm; border-radius: 50%; background: var(--lime); color: var(--navy); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15pt; }
+  .enlace small { display: block; color: var(--lime); font-weight: 700; letter-spacing: .1em; text-transform: uppercase; font-size: 7.5pt; }
+  .enlace b { display: block; font-size: 13pt; }
+  .enlace span { display: block; font-size: 8pt; color: #a9b6d4; margin-top: .8mm; }
+
+  .nota { border-radius: 2.5mm; padding: 4mm 5mm; margin: 3mm 0; font-size: 10pt; background: var(--bg); border-left: 1.2mm solid var(--navy); }
+  .nota > .t { display: block; font-weight: 700; margin-bottom: 1mm; }
+  .nota.ok { border-left-color: var(--lime); background: #f3faea; }
+  .nota.alerta { border-left-color: var(--amber); background: #fff7e3; }
+  .nota p:last-child { margin: 0; }
+  ol.mini { margin: 1.5mm 0 0; padding-left: 5mm; } ol.mini li { margin: 1mm 0; }
+
+  figure { margin: 0; }
+  .captura { border: 1px solid var(--border); border-radius: 2.5mm; padding: 4mm; background: var(--bg); text-align: center; }
+  .captura img { display: block; max-width: 100%; margin: 0 auto; border-radius: 1mm; border: 1px solid #cdd3e0; box-shadow: 0 1.5mm 5mm rgba(30,44,84,.16); }
+  .captura figcaption { font-size: 8.8pt; color: var(--text-2); margin-top: 3mm; line-height: 1.4; }
+  .capturas { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; margin: 4mm 0; }
+  .etq { display: inline-block; font-size: 7.5pt; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; padding: .8mm 3mm; border-radius: 99px; margin-bottom: 3mm; }
+  .etq.ok { background: var(--lime); color: var(--navy); } .etq.mal { background: var(--red); color: #fff; } .etq.gris { background: var(--navy); color: #fff; }
+  .fila-error { display: grid; grid-template-columns: 88mm 1fr; gap: 5mm; align-items: start; }
+
+  .check { list-style: none; padding: 0; margin: 2mm 0; }
+  .check li { position: relative; padding-left: 7.5mm; margin: 2.2mm 0; }
+  .check li::before { content: "✓"; position: absolute; left: 0; top: .6mm; width: 5mm; height: 5mm; border-radius: 50%; background: var(--lime); color: var(--navy); font-weight: 800; font-size: 8.5pt; line-height: 5mm; text-align: center; }
+
+  .tres { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4mm; margin-top: 3mm; }
+  .dato { border: 1px solid var(--border); border-radius: 2.5mm; padding: 4.5mm; }
+  .dato .k { display: block; font-size: 16pt; font-weight: 800; color: var(--navy); line-height: 1.1; }
+  .dato .k em { font-style: normal; color: var(--lime-d); }
+  .dato small { display: block; color: var(--text-2); font-size: 9.2pt; margin-top: 1.5mm; line-height: 1.4; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 9.8pt; }
+  th { text-align: left; background: var(--navy); color: #fff; font-weight: 700; padding: 2.8mm 3.5mm; font-size: 8pt; letter-spacing: .1em; text-transform: uppercase; }
+  td { padding: 2.6mm 3.5mm; border-bottom: 1px solid var(--border); vertical-align: top; }
+  td:first-child { font-weight: 700; }
+  tr:nth-child(even) td { background: #f8f9fc; }
+
+  .soporte { display: flex; align-items: center; gap: 6mm; margin-top: 3mm; padding: 6mm 7mm; border-radius: 2.5mm; background: var(--navy); color: #fff; }
+  .soporte .av { flex: 0 0 15mm; height: 15mm; border-radius: 50%; background: var(--lime); color: var(--navy); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15pt; }
+  .soporte small { display: block; color: var(--lime); font-size: 7.5pt; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+  .soporte b { display: block; font-size: 15pt; line-height: 1.2; }
+  .soporte span { color: #c9d1e6; font-size: 10.5pt; }
+</style>
+</head>
+<body>
+
+<!-- ======================= PORTADA ======================= -->
+<section class="pagina portada">
+  <div class="brillo"></div>
+  <img class="logo" src="../dashboard/delaware-logo-blanco.png" alt="DLW Latam">
+  <span class="eyebrow">Gestor de Tokens · Claude Code</span>
+  <h1>Manual de<br><em>instalación</em></h1>
+  <p class="bajada">Guía para instalar GestorTokens.exe y registrar el consumo de la cuenta compartida de Claude Code de Delaware.</p>
+  <div class="barra"></div>
+  <div class="meta">
+    <div><small>Versión</small>2.2.1</div>
+    <div><small>Fecha</small>18 de noviembre de 2026</div>
+    <div><small>Dirigido a</small>Analistas QA y Dev</div>
+    <div><small>Dónde se instala</small>Laptop DLW y VM Luz del Sur</div>
+    <div><small>Permisos</small>No requiere administrador</div>
+    <div><small>Tiempo estimado</small>2 minutos, una sola vez</div>
+  </div>
+
+  <div class="indice">
+    <h4>Contenido</h4>
+    <ol>
+      <li><span>01</span>Antes de empezar<i></i><em>2</em></li>
+      <li><span>04</span>Identificación<i></i><em>5</em></li>
+      <li><span>02</span>En qué máquinas se instala<i></i><em>3</em></li>
+      <li><span>05</span>Confirmación<i></i><em>6</em></li>
+      <li><span>03</span>Descarga y ejecución<i></i><em>4</em></li>
+      <li><span>06</span>Preguntas frecuentes y soporte<i></i><em>7</em></li>
+    </ol>
+  </div>
+  <div class="pie"><span>DLW Latam · Documento de uso interno</span><span>v2.2.1 · Noviembre 2026</span></div>
+</section>
+
+<!-- ======================= 01 ANTES DE EMPEZAR ======================= -->
+<section class="pagina">
+  <header class="cab"><img src="../dashboard/delaware-logo-blanco.png" alt="DLW Latam"><span><b>Gestor de Tokens</b> · Manual de instalación</span></header>
+  <div class="cuerpo">
+    <span class="seccion">01 · Introducción</span>
+    <h2>Antes de empezar</h2>
+    <p class="lead">GestorTokens.exe mide cuánto usa cada persona la cuenta compartida de Claude Code, para que el equipo cuide la cuota disponible. Se instala una sola vez y luego trabaja solo, en segundo plano.</p>
+
+    <div class="dos">
+      <div class="tarjeta si">
+        <h4>Qué registra</h4>
+        <ul>
+          <li>Totales de tokens por día y por modelo.</li>
+          <li>El título de cada conversación y la carpeta de trabajo.</li>
+          <li>El nombre de tu equipo y tu usuario de Windows.</li>
+          <li>Tu nombre completo y tu correo @dlwlatam.com.</li>
+        </ul>
+      </div>
+      <div class="tarjeta no">
+        <h4>Qué no registra nunca</h4>
+        <ul>
+          <li>Tus prompts ni las respuestas de Claude.</li>
+          <li>Tu código ni el contenido de tus archivos.</li>
+          <li>Contraseñas, credenciales ni datos del cliente.</li>
+          <li>Nada de lo que hagas fuera de Claude Code.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Requisitos</h3>
+    <div class="reqs">
+      <div class="req destacado"><span class="ic">✓</span><div><b>No necesitas permisos de administrador</b><small>No se instala nada en el sistema: el programa se copia en tu carpeta de usuario (<code>%LOCALAPPDATA%\GestorTokens</code>). Si Windows llegara a pedirte una contraseña de administrador, cancela y escribe a soporte.</small></div></div>
+      <div class="req"><span class="ic">1</span><div><b>Windows 10 u 11</b><small>Tu laptop Delaware y la máquina virtual de Luz del Sur cumplen este requisito.</small></div></div>
+      <div class="req"><span class="ic">2</span><div><b>Claude Code con la cuenta compartida</b><small>Conectado con la cuenta de Delaware. El uso con cuentas personales no se registra.</small></div></div>
+      <div class="req"><span class="ic">3</span><div><b>Tu correo @dlwlatam.com</b><small>El programa solo acepta correos corporativos de DLW Latam.</small></div></div>
+      <div class="req"><span class="ic">4</span><div><b>Acceso al SharePoint</b><small>Para descargar el instalador (sección 03).</small></div></div>
+    </div>
+
+    <div class="nota ok" style="margin-top:6mm">
+      <span class="t">La instalación en cuatro pasos</span>
+      <p>Descarga desde el SharePoint › doble clic › nombre y correo @dlwlatam.com › mensaje «Consumo enviado correctamente».</p>
+    </div>
+  </div>
+  <footer class="pp"><span>DLW Latam · Documento de uso interno</span><span><b>2</b> / 7</span></footer>
+</section>
+
+<!-- ======================= 02 MÁQUINAS ======================= -->
+<section class="pagina">
+  <header class="cab"><img src="../dashboard/delaware-logo-blanco.png" alt="DLW Latam"><span><b>Gestor de Tokens</b> · Manual de instalación</span></header>
+  <div class="cuerpo">
+    <span class="seccion">02 · Alcance</span>
+    <h2>¿En qué máquinas se instala?</h2>
+    <p class="lead">Instálalo en <b>cada máquina donde uses Claude Code con la cuenta compartida</b>: tu laptop Delaware, la máquina virtual de Luz del Sur, o ambas. El procedimiento es el mismo en las dos.</p>
+
+    <div class="dos">
+      <div class="tarjeta navy">
+        <h4>Laptop Delaware</h4>
+        <ul>
+          <li>Tu equipo de DLW Latam, con tu usuario de Windows.</li>
+          <li>Descarga el archivo desde el SharePoint con tu cuenta. Si no tienes acceso desde la laptop, solicítalo a soporte.</li>
+          <li>Se instala en tu carpeta de usuario, sin administrador.</li>
+        </ul>
+      </div>
+      <div class="tarjeta navy">
+        <h4>Máquina virtual Luz del Sur</h4>
+        <ul>
+          <li>La VM del cliente donde trabajas, incluso desde Visual Studio Code.</li>
+          <li>Descarga el archivo dentro de la VM desde el SharePoint.</li>
+          <li>Funciona aunque PowerShell esté deshabilitado.</li>
+          <li>No pide administrador ni cambia la configuración de la VM.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Si trabajas en las dos máquinas</h3>
+    <ul class="check">
+      <li>Instálalo <b>en cada una por separado</b>: el programa solo mide el consumo de la máquina donde está instalado.</li>
+      <li>Usa <b>el mismo nombre y el mismo correo @dlwlatam.com</b> en ambas.</li>
+      <li>El panel del equipo une las dos máquinas a tu nombre y suma su consumo.</li>
+      <li>En el mensaje final, el campo <b>Equipo</b> mostrará un nombre distinto en cada máquina. Es lo esperado.</li>
+    </ul>
+
+    <div class="tres" style="margin-top:7mm">
+      <div class="dato"><span class="k">1 <em>vez</em></span><small>Se instala una sola vez en cada máquina.</small></div>
+      <div class="dato"><span class="k">30 <em>min</em></span><small>Envía el consumo solo, cada 30 minutos.</small></div>
+      <div class="dato"><span class="k">0 <em>admin</em></span><small>No requiere permisos de administrador.</small></div>
+    </div>
+
+    <div class="nota alerta" style="margin-top:7mm">
+      <span class="t">Solo se mide la cuenta compartida de Delaware</span>
+      <p>Si en alguna de tus máquinas usas Claude Code con una cuenta personal, ese uso no se registra. Puedes dejar el programa instalado: empezará a medir cuando esa máquina use la cuenta compartida.</p>
+    </div>
+  </div>
+  <footer class="pp"><span>DLW Latam · Documento de uso interno</span><span><b>3</b> / 7</span></footer>
+</section>
+
+<!-- ======================= 03 DESCARGA Y EJECUCIÓN ======================= -->
+<section class="pagina">
+  <header class="cab"><img src="../dashboard/delaware-logo-blanco.png" alt="DLW Latam"><span><b>Gestor de Tokens</b> · Manual de instalación</span></header>
+  <div class="cuerpo">
+    <span class="seccion">03 · Instalación</span>
+    <h2>Descarga y ejecución</h2>
+    <p class="lead">Sigue los pasos en orden. Todo el proceso toma unos 2 minutos.</p>
+
+    <div class="paso">
+      <div class="num">1</div>
+      <div>
+        <span class="tag">Paso 1 de 4</span>
+        <h3>Descarga GestorTokens.exe</h3>
+        <p>En la máquina donde lo vas a instalar (laptop Delaware o VM Luz del Sur), abre el siguiente enlace y descarga el archivo:</p>
+        <a class="enlace" href="https://luzdelsurlds.sharepoint.com/:u:/r/sites/SGTIMP/Documentos%20compartidos/Planeamiento%20y%20calidad/Calidad/Documentaci%C3%B3n%20del%20servicio%20-%20Equipo%20Delaware/GestorTokens.exe?d=w3a252db5d0824e2a9fd4213a228564d3&csf=1&web=1&e=nNOwkM">
+          <span class="flecha">↓</span>
+          <div>
+            <small>Descargar desde SharePoint · clic aquí</small>
+            <b>GestorTokens.exe · versión 2.2.1</b>
+            <span>SGTIMP › Documentos compartidos › Planeamiento y calidad › Calidad › Documentación del servicio - Equipo Delaware</span>
+          </div>
+        </a>
+        <p>Guárdalo en una carpeta fácil de ubicar, por ejemplo <b>Descargas</b>.</p>
+        <div class="nota">
+          <span class="t">Verifica que sea la versión correcta</span>
+          <p>Clic derecho sobre el archivo › <b>Propiedades</b> › pestaña <b>Detalles</b>. Debe indicar <b>Gestor de Tokens · DLW Latam</b>, versión <b>2.2.1</b>.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="paso">
+      <div class="num">2</div>
+      <div>
+        <span class="tag">Paso 2 de 4</span>
+        <h3>Ábrelo con doble clic</h3>
+        <p>Haz doble clic en <b>GestorTokens.exe</b>. No es necesario usar «Ejecutar como administrador».</p>
+        <div class="nota alerta">
+          <span class="t">Si aparece el aviso «Windows protegió su PC»</span>
+          <p>Es normal la primera vez, porque se trata de un programa interno de DLW Latam:</p>
+          <ol class="mini"><li>Haz clic en <b>Más información</b>.</li><li>Pulsa el botón <b>Ejecutar de todas formas</b>.</li></ol>
+        </div>
+        <div class="nota">
+          <span class="t">Si el antivirus lo bloquea o no se abre</span>
+          <p>No intentes forzarlo. Escribe a soporte (sección 06) indicando en qué máquina ocurrió.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer class="pp"><span>DLW Latam · Documento de uso interno</span><span><b>4</b> / 7</span></footer>
+</section>
+
+<!-- ======================= 04 IDENTIFICACIÓN ======================= -->
+<section class="pagina">
+  <header class="cab"><img src="../dashboard/delaware-logo-blanco.png" alt="DLW Latam"><span><b>Gestor de Tokens</b> · Manual de instalación</span></header>
+  <div class="cuerpo">
+    <span class="seccion">04 · Instalación</span>
+    <div class="paso" style="margin-bottom:4mm">
+      <div class="num">3</div>
+      <div>
+        <span class="tag">Paso 3 de 4</span>
+        <h3>Identifícate con tu nombre y tu correo DLW</h3>
+        <p>Se abre la ventana <b>«Gestor de Tokens · DLW»</b>. Solo aparece la primera vez en cada máquina.</p>
+        <ul class="check">
+          <li><b>Nombre completo:</b> nombre y apellidos, por ejemplo <i>Ana Ruiz Pérez</i>.</li>
+          <li><b>Correo de DLW:</b> tu correo corporativo, terminado en <b>@dlwlatam.com</b>.</li>
+          <li>Pulsa <b>Continuar</b> o presiona Enter.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="capturas">
+      <figure class="captura"><span class="etq gris">Así se abre</span><img src="img/01-ventana-vacia.png" alt="Ventana de identificación vacía"><figcaption>Ventana de identificación al abrir el programa.</figcaption></figure>
+      <figure class="captura"><span class="etq ok">Correcto</span><img src="img/02-ventana-llena.png" alt="Ventana con nombre y correo @dlwlatam.com"><figcaption>Nombre completo y correo <b>@dlwlatam.com</b>. Pulsa <b>Continuar</b>.</figcaption></figure>
+    </div>
+
+    <div class="fila-error">
+      <figure class="captura"><span class="etq mal">Incorrecto</span><img src="img/03-ventana-error.png" alt="Error por correo de otro dominio"><figcaption>Correo de otro dominio: aparece el mensaje en rojo.</figcaption></figure>
+      <div>
+        <div class="nota alerta" style="margin-top:0">
+          <span class="t">«El correo debe terminar en @dlwlatam.com»</span>
+          <p>Aparece si escribes un correo personal (Gmail, Hotmail) o del cliente. Corrige el correo y pulsa Continuar.</p>
+        </div>
+        <div class="nota">
+          <span class="t">¿Por qué pide mi correo?</span>
+          <p>Para que tu consumo quede a tu nombre automáticamente, en todas tus máquinas.</p>
+        </div>
+        <div class="nota">
+          <span class="t">¿Y si cancelo?</span>
+          <p>Si cierras o cancelas la ventana, no se instala nada.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer class="pp"><span>DLW Latam · Documento de uso interno</span><span><b>5</b> / 7</span></footer>
+</section>
+
+<!-- ======================= 05 CONFIRMACIÓN ======================= -->
+<section class="pagina">
+  <header class="cab"><img src="../dashboard/delaware-logo-blanco.png" alt="DLW Latam"><span><b>Gestor de Tokens</b> · Manual de instalación</span></header>
+  <div class="cuerpo">
+    <span class="seccion">05 · Verificación</span>
+    <div class="paso" style="margin-bottom:5mm">
+      <div class="num">4</div>
+      <div>
+        <span class="tag">Paso 4 de 4</span>
+        <h3>Confirma que todo salió bien</h3>
+        <p>Al terminar verás este mensaje. <b>Si lo ves, la instalación está completa.</b></p>
+      </div>
+    </div>
+
+    <figure class="captura" style="width:120mm;margin:0 auto 6mm"><span class="etq ok">Así debe terminar</span><img src="img/04-confirmacion.png" alt="Mensaje Consumo enviado correctamente"><figcaption>Mensaje final del Gestor de Tokens.</figcaption></figure>
+
+    <h3 style="margin-top:0">Revisa que el mensaje indique:</h3>
+    <ul class="check">
+      <li><b>«Consumo enviado correctamente»</b>: tu historial ya llegó al panel del equipo.</li>
+      <li><b>Equipo:</b> el nombre de tu máquina y tu usuario de Windows.</li>
+      <li><b>Registrado como:</b> tu nombre completo y tu correo @dlwlatam.com.</li>
+      <li><b>«Quedó programado: se enviará solo cada 30 minutos»</b>: no necesitas volver a abrirlo.</li>
+    </ul>
+    <p>Pulsa <b>Aceptar</b>. Puedes borrar el archivo descargado: el programa ya quedó copiado en tu carpeta de usuario.</p>
+
+    <div class="nota alerta">
+      <span class="t">¿Ves «Claude Code en esta máquina no está conectado con la cuenta compartida»?</span>
+      <p>Tu Claude Code está usando otra cuenta, por ejemplo una personal. Conéctalo con la cuenta compartida de Delaware y vuelve a abrir GestorTokens.exe.</p>
+    </div>
+
+    <h3>Después de la instalación</h3>
+    <div class="tres" style="margin-top:0">
+      <div class="dato"><span class="k">Automático</span><small>Se ejecuta solo cada 30 minutos mientras tu sesión de Windows está abierta.</small></div>
+      <div class="dato"><span class="k">Silencioso</span><small>No vuelve a mostrar ventanas ni interrumpe tu trabajo.</small></div>
+      <div class="dato"><span class="k">Visible</span><small>Tu consumo aparece en el panel del equipo a tu nombre.</small></div>
+    </div>
+  </div>
+  <footer class="pp"><span>DLW Latam · Documento de uso interno</span><span><b>6</b> / 7</span></footer>
+</section>
+
+<!-- ======================= 06 FAQ Y SOPORTE ======================= -->
+<section class="pagina">
+  <header class="cab"><img src="../dashboard/delaware-logo-blanco.png" alt="DLW Latam"><span><b>Gestor de Tokens</b> · Manual de instalación</span></header>
+  <div class="cuerpo">
+    <span class="seccion">06 · Ayuda</span>
+    <h2>Preguntas frecuentes</h2>
+    <table>
+      <thead><tr><th style="width:40%">Situación</th><th>Qué hacer</th></tr></thead>
+      <tbody>
+        <tr><td>No acepta mi correo</td><td>Debe terminar exactamente en <b>@dlwlatam.com</b>. No se aceptan correos personales ni del cliente.</td></tr>
+        <tr><td>Me equivoqué en mi nombre o correo</td><td>Escribe a soporte indicando tu nombre y correo correctos.</td></tr>
+        <tr><td>¿Tengo que abrirlo todos los días?</td><td>No. Envía el consumo solo cada 30 minutos mientras tu sesión de Windows está abierta.</td></tr>
+        <tr><td>Uso Claude Code personal y el de Delaware en la misma máquina</td><td>Solo se registra el uso de la cuenta compartida de Delaware.</td></tr>
+        <tr><td>Aparece «No se pudo enviar el consumo»</td><td>Revisa tu conexión a internet y vuelve a abrir el programa. Si persiste, escribe a soporte.</td></tr>
+        <tr><td>Windows o el antivirus lo bloquean</td><td>No intentes forzarlo. Escribe a soporte.</td></tr>
+        <tr><td>Trabajo en mi laptop y en la VM</td><td>Instálalo en ambas con el mismo correo. El panel suma las dos a tu nombre.</td></tr>
+        <tr><td>Me cambiaron de VM o de laptop</td><td>Repite la instalación en la máquina nueva con el mismo correo; se suma a tu nombre automáticamente.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 style="margin-top:10mm">Soporte</h2>
+    <p>Ante cualquier duda o problema con la instalación, comunícate con:</p>
+    <div class="soporte">
+      <span class="av">GP</span>
+      <div><small>Soporte técnico</small><b>Giancarlo Palomino</b><span>giancarlo.palomino@dlwlatam.com</span></div>
+    </div>
+  </div>
+  <footer class="pp"><span>DLW Latam · Documento de uso interno</span><span><b>7</b> / 7</span></footer>
+</section>
+
+</body>
+</html>
