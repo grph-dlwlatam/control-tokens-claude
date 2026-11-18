@@ -3,3 +3,4 @@ agente/estado.json
 .playwright-mcp/
 CLAUDE.md
 dist/
+agente-exe/*.res
