@@ -2,3 +2,4 @@ agente/agente.log
 agente/estado.json
 .playwright-mcp/
 CLAUDE.md
+dist/

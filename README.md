@@ -39,6 +39,20 @@ Para retirarlo: `desinstalar.cmd`. El log queda en `%LOCALAPPDATA%\ControlTokens
 
 Prueba sin enviar nada: `ejecutar.cmd --dry-run` muestra exactamente lo que se enviaría.
 
+### Alternativa: un solo `GestorTokens.exe` (recomendada si el antivirus lo permite)
+
+Código en [agente-exe/](agente-exe/) (Go, sin dependencias). La configuración va embebida. Se compila con:
+
+```
+cd agente-exe
+go build -trimpath -ldflags "-H windowsgui -s -w" -o ../dist/GestorTokens.exe .
+```
+
+- **Doble clic:** se copia a `%LOCALAPPDATA%\GestorTokens`, envía el historial, programa la tarea `GestorTokensDLW` cada 30 minutos y muestra el resultado. No requiere administrador.
+- `GestorTokens.exe --desinstalar` quita la tarea y los archivos. `--dry-run` deja en `%LOCALAPPDATA%\GestorTokens\dry-run.json` lo que enviaría.
+- Solo envía si Claude Code está conectado con la cuenta compartida (`cuentaObjetivo` en `main.go`).
+- No está firmado. Si SmartScreen, el antivirus o AppLocker lo bloquean, usar la versión `.cmd`.
+
 ## 4. Dashboard
 
 Doble clic en `dashboard.html`, iniciar sesión con el usuario del paso 1.4 y escribir el nombre de cada persona junto a su máquina. Las máquinas con el mismo nombre se suman como una sola persona.
