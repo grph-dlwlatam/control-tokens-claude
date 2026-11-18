@@ -142,6 +142,8 @@ footer div { max-width: 1680px; margin: 0 auto; padding: 14px 16px; display: fle
 footer b { color: #fff; font-weight: 600; }
 /* Alertas de cuadre */
 .alertas { display: grid; gap: 10px; margin-bottom: 18px; }
+.al-mas { position: sticky; bottom: 4px; justify-self: end; margin: -4px 8px 0 0; padding: 4px 12px; border-radius: 99px; background: var(--navy, #1e2c54); color: #fff; font-size: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(30,44,84,.25); border: 0; font-family: inherit; }
+.al-mas[hidden] { display: none; }
 .alerta { display: flex; gap: 12px; align-items: flex-start; background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--muted); border-radius: 6px; padding: 12px 16px; box-shadow: 0 1px 3px rgba(30,44,84,.06); }
 .alerta .ic { font-weight: 700; font-size: 16px; line-height: 1.3; width: 18px; text-align: center; }
 .alerta b { display: block; font-size: 15px; }
@@ -649,6 +651,17 @@ body.en-cuota #rango { opacity: .45; }
 .lm-cuota { margin: 8px 2px 0; font-size: 12.5px; color: var(--text-2); }
 @media (max-width: 760px) { .pager { justify-content: center; } .pg { min-width: 40px; height: 40px; } }
 
+/* Pantallas bajas (laptop): compactar alturas */
+@media (min-width: 761px) and (max-height: 820px) {
+  main { padding-top: 10px; }
+  .kpis { gap: 10px; margin-bottom: 12px; }
+  .kpi { padding: 10px 14px; }
+  .kpi .val { font-size: 24px; }
+  .card { padding: 14px 16px; }
+  .fila-2, .fila-2b { gap: 12px; margin-bottom: 12px; }
+  h2 { margin-bottom: 10px; }
+  #tTop td, #tModelos td { padding-top: 5px; padding-bottom: 5px; }
+}
 /* Distribución en pantallas anchas */
 .fila-2, .fila-2b { display: grid; gap: 18px; margin-bottom: 18px; }
 .fila-2 > .card, .fila-2b > .card, .fila-2 > .alertas { margin-bottom: 0; }
@@ -656,7 +669,9 @@ body.en-cuota #rango { opacity: .45; }
 @media (min-width: 1200px) {
   .fila-2 { grid-template-columns: minmax(340px, 1fr) 2.3fr; align-items: stretch; }
   .fila-2:has(> .alertas:empty) { grid-template-columns: 1fr; }
-  .fila-2b { grid-template-columns: 1fr 1fr; align-items: start; }
+  .fila-2b { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; }
+  .fila-2 { grid-template-columns: minmax(320px, 1fr) minmax(0, 2.3fr); }
+  .fila-2 .alerta span.d { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .fila-2 .alerta { padding: 10px 14px; }
   .fila-2 .alerta b { font-size: 14px; }
   .fila-2 .alerta span.d { font-size: 12.5px; }
@@ -1196,13 +1211,28 @@ function renderAlertas(totalCosto, mapeado, sinAsignar, equipo) {
   const cq = calcularCuota();
   if (cq?.calibInvalida) al.push(['warn', '⏱', 'La calibración manual de la cuota no es coherente', 'Se hizo con muy poco consumo medido. <a href="#" data-ir="cuota">Revisar cuota</a>']);
   else if (cq) {
-    if (cq.agotaAntes) al.push(['bad', '⏱', `Al ritmo actual la cuota semanal se agota el ${fechaCorta(cq.fechaAgota)}`, `Va en ${Math.round(cq.pct * 100)}% y el reinicio es el ${fechaCorta(cq.reinicio)}. <a href="#" data-ir="cuota">Ver cuota</a>`]);
-    else if (cq.pct >= 0.8) al.push(['warn', '⏱', `La cuota semanal va en ${Math.round(cq.pct * 100)}%`, `Reinicia el ${fechaCorta(cq.reinicio)}. <a href="#" data-ir="cuota">Ver cuota</a>`]);
+    if (cq.agotaAntes) al.push(['bad', '⏱', `Al ritmo actual la cuota semanal se agota el ${fechaCorta(cq.fechaAgota)}`, `Va en ${Math.round(cq.pct * 100)}% y el reinicio es el ${fechaCorta(cq.reinicio)} · <a href="#" data-ir="cuota">Ver cuota</a>`]);
+    else if (cq.pct >= 0.8) al.push(['warn', '⏱', `La cuota semanal va en ${Math.round(cq.pct * 100)}%`, `Reinicia el ${fechaCorta(cq.reinicio)} · <a href="#" data-ir="cuota">Ver cuota</a>`]);
     if (cq.noMedido >= 5) al.push(['warn', '?', `${cq.noMedido.toFixed(0)}% de la cuota no lo explican los agentes`, 'claude.ai marcó más uso del que reportan las máquinas: alguien usa la cuenta sin el agente. <a href="#" data-ir="cuota">Ver cuota</a>']);
   }
   if (pendientes.length) al.push(['warn', '⚑', `${pendientes.length} sesión(es) con banderas pendientes de revisión`, `Suman ${usd(pendientes.reduce((x, s) => x + s.costo, 0))}. <a href="#" data-ir="sesiones">Revisar</a>`]);
   const destino = { '⏱': 'cuota', '✕': 'maquinas', '+': 'maquinas', '⬆': 'maquinas', '▲': 'equipo', '?': 'equipo', '⚑': 'sesiones' };
-  $('#alertas').innerHTML = al.map(([n, ic, t, d]) => `<div class="alerta ${n}"${destino[ic] ? ` data-ir="${destino[ic]}" role="button" tabindex="0"` : ''}><span class="ic" aria-hidden="true">${ic}</span><div><b>${t}</b><span class="d">${d}</span></div>${destino[ic] ? '<span class="chev" aria-hidden="true">›</span>' : ''}</div>`).join('');
+  const rango = { bad: 0, warn: 1, ok: 2 };
+  al.sort((a, b) => (rango[a[0]] ?? 1) - (rango[b[0]] ?? 1)); // primero lo crítico; «Cuadra» al final
+  $('#alertas').innerHTML = al.map(([n, ic, t, d]) => `<div class="alerta ${n}"${destino[ic] ? ` data-ir="${destino[ic]}" role="button" tabindex="0"` : ''}><span class="ic" aria-hidden="true">${ic}</span><div><b>${t}</b><span class="d">${d}</span></div>${destino[ic] ? '<span class="chev" aria-hidden="true">›</span>' : ''}</div>`).join('') +
+    '<button class="al-mas" type="button" hidden></button>';
+  // Si la columna de alertas no alcanza, avisar cuántas quedan abajo (antes quedaban ocultas sin aviso).
+  const cont = $('#alertas'), mas = cont.querySelector('.al-mas');
+  cont._act = () => {
+    const lim = cont.getBoundingClientRect().bottom;
+    const ocultas = [...cont.querySelectorAll('.alerta')].filter(a => a.getBoundingClientRect().bottom > lim + 2).length;
+    mas.hidden = !ocultas || cont.scrollHeight <= cont.clientHeight + 4;
+    mas.textContent = '↓ ' + ocultas + (ocultas === 1 ? ' alerta más' : ' alertas más');
+  };
+  mas.addEventListener('click', e => { e.stopPropagation(); cont.scrollBy({ top: cont.clientHeight * 0.8, behavior: 'smooth' }); });
+  cont.onscroll = cont._act;
+  if (!cont._ro) { cont._ro = new ResizeObserver(() => cont._act?.()); cont._ro.observe(cont); }
+  requestAnimationFrame(cont._act);
 }
 
 // Cuenta ascendente para las cifras principales.
@@ -1682,6 +1712,7 @@ document.addEventListener('click', e => {
 // lectura automática, la líder puede registrar la de claude.ai a mano. El límite en costo equivalente
 // se deduce del consumo medido.
 const DIA_MS = 864e5, SEMANA_MS = 7 * DIA_MS;
+const fechaMini = d => new Date(d).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 const fechaCorta = d => new Date(d).toLocaleString('es-PE', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 const duracion = ms => {
   const min = Math.round(Math.max(0, ms) / 6e4), h = Math.floor(min / 60), d = Math.floor(h / 24);
@@ -1817,7 +1848,7 @@ function renderCuota() {
     const p0 = Math.min(cq.pct, 1), est0 = cq.pct >= 0.9 ? 'bad' : cq.pct >= 0.7 ? 'warn' : 'ok';
     $('#cqMedidor').innerHTML = '<h2>Cuota semanal del plan</h2><div class="cq-med"><div class="cq-donut ' + est0 + '" style="--p:' + p0 * 100 + '"><span><b>' + Math.round(cq.pct * 100) + '%</b><small>usado</small></span></div>' +
       '<div class="cq-datos"><span class="cq-estado ' + est0 + '">' + { ok: 'En rango', warn: 'Atención', bad: 'Crítico' }[est0] + '</span>' + sesTxt +
-      '<div><small>Ciclo</small><b class="cq-f">' + fechaCorta(cq.inicio) + ' → ' + fechaCorta(cq.reinicio) + '</b></div></div></div>';
+      '<div><small>Ciclo</small><b class="cq-f">' + fechaMini(cq.inicio) + ' → ' + fechaMini(cq.reinicio) + '</b></div></div></div>';
     $('#cqProy').innerHTML = '<h2>Proyección</h2><div class="cq-kpis"><div><small>Reinicia en</small><b>' + duracion(cq.reinicio - Date.now()) + '</b></div></div><p class="small">La proyección aparece cuando los agentes reporten consumo en este ciclo.</p>';
     $('#cqGrafico').innerHTML = '<p class="lm-vacio">Esperando consumo medido de los agentes en este ciclo.</p>';
     $('#cqLeyenda').innerHTML = '';
@@ -1832,7 +1863,7 @@ function renderCuota() {
     '<div class="cq-datos"><span class="cq-estado ' + estado + '">' + etiqueta + '</span>' +
     '<div><small>Consumido</small><b>' + usd(cq.usado) + '</b><small> de ' + usd(cq.limite) + ' eq.</small></div>' +
     '<div><small>Disponible</small><b>' + usd(cq.restante) + '</b></div>' + sesTxt +
-    '<div><small>Ciclo</small><b class="cq-f">' + fechaCorta(cq.inicio) + ' → ' + fechaCorta(cq.reinicio) + '</b></div></div></div>';
+    '<div><small>Ciclo</small><b class="cq-f">' + fechaMini(cq.inicio) + ' → ' + fechaMini(cq.reinicio) + '</b></div></div></div>';
   // Proyección
   const agota = cq.agotaAntes
     ? '<div class="cq-big bad"><small>Al ritmo actual se agota</small><b>' + fechaCorta(cq.fechaAgota) + '</b><small>' + duracion(cq.reinicio - cq.fechaAgota) + ' antes del reinicio</small></div>'
@@ -1840,14 +1871,23 @@ function renderCuota() {
   $('#cqProy').innerHTML = '<h2>Proyección</h2>' + agota + '<div class="cq-kpis">' +
     '<div><small>Reinicia en</small><b>' + duracion(cq.reinicio - Date.now()) + '</b></div>' +
     '<div><small>Ritmo actual</small><b>' + usd(cq.ritmoDia) + '/día</b></div>' +
-    '<div><small>Ritmo para llegar</small><b class="' + (cq.ritmoDia > cq.ritmoRecomendado ? 'rojo' : '') + '">' + usd(cq.ritmoRecomendado) + '/día</b></div></div>';
+    '<div title="Gasto diario máximo para llegar al reinicio sin agotar la cuota"><small>Ritmo ideal</small><b class="' + (cq.ritmoDia > cq.ritmoRecomendado ? 'rojo' : '') + '">' + usd(cq.ritmoRecomendado) + '/día</b></div></div>';
+  renderQuienCuota(cq); // primero: su alto natural define el del gráfico
   renderGraficoCuota(cq);
-  renderQuienCuota(cq);
 }
 
+// Alto del gráfico de cuota: llena su tarjeta hasta igualar a la de «¿Quién consume?» (sin espacio vacío).
+function altoGraficoCuota(el) {
+  if (innerWidth <= 760) return 200;
+  const cg = el.closest('.card'), q = $('#cqQuien'), cqC = q.closest('.card');
+  if (getComputedStyle(cg.parentElement).gridTemplateColumns.split(' ').length < 2) return 220; // una sola columna
+  const natural = q.getBoundingClientRect().bottom - cqC.getBoundingClientRect().top + parseFloat(getComputedStyle(cqC).paddingBottom);
+  const usado = el.getBoundingClientRect().top - cg.getBoundingClientRect().top + parseFloat(getComputedStyle(cg).paddingBottom);
+  return Math.round(Math.max(170, Math.min(420, natural - usado - 2)));
+}
 function renderGraficoCuota(cq) {
   const el = $('#cqGrafico');
-  const W = Math.max(el.clientWidth, 300), H = innerWidth <= 760 ? 200 : Math.max(150, Math.min(260, innerHeight - 668)), m = { t: 10, r: 28, b: 26, l: 56 };
+  const W = Math.max(el.clientWidth, 300), H = altoGraficoCuota(el), m = { t: 10, r: 28, b: 26, l: 56 };
   // Acumulado diario dentro del ciclo
   const puntos = [], ahora = Date.now();
   for (let t = cq.inicio; t <= Math.min(ahora, cq.reinicio); t += DIA_MS / 4) puntos.push([t, consumoEntre(cq.inicio, t)]);
@@ -1860,7 +1900,7 @@ function renderGraficoCuota(cq) {
   for (let v = 0; v <= yMax + 1e-9; v += paso) svg += '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="var(--grid)"/><text x="' + (m.l - 8) + '" y="' + (y(v) + 4) + '" text-anchor="end" font-size="11" fill="var(--muted)">' + usd(v) + '</text>';
   for (let i = 0; i <= 7; i++) { const t = cq.inicio + i * DIA_MS; svg += '<text x="' + x(t) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="11" fill="var(--muted)">' + new Date(t).toLocaleDateString('es-PE', { weekday: 'short', day: '2-digit' }) + '</text>'; }
   // Límite y "hoy"
-  svg += '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + y(cq.limite) + '" y2="' + y(cq.limite) + '" stroke="var(--critical)" stroke-width="2" stroke-dasharray="6 4"/><text x="' + (W - m.r) + '" y="' + (y(cq.limite) - 6) + '" text-anchor="end" font-size="11.5" font-weight="700" fill="var(--critical)">Límite ' + usd(cq.limite) + '</text>';
+  svg += '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + y(cq.limite) + '" y2="' + y(cq.limite) + '" stroke="var(--critical)" stroke-width="2" stroke-dasharray="6 4"/><text x="' + (m.l + 6) + '" y="' + (y(cq.limite) - 6) + '" text-anchor="start" font-size="11.5" font-weight="700" fill="var(--critical)">Límite ' + usd(cq.limite) + '</text>';
   svg += '<line x1="' + x(ahora) + '" x2="' + x(ahora) + '" y1="' + m.t + '" y2="' + (H - m.b) + '" stroke="var(--border)" stroke-dasharray="3 3"/><text x="' + x(ahora) + '" y="' + (m.t + 10) + '" text-anchor="middle" font-size="11" fill="var(--text-2)">hoy</text>';
   // Área real y proyección
   const linea = puntos.map(([t, v], i) => (i ? 'L' : 'M') + x(t).toFixed(1) + ',' + y(v).toFixed(1)).join('');
@@ -1941,7 +1981,7 @@ function renderHistorialCuota() {
     $('#cqLeyenda').innerHTML = '';
     return;
   }
-  const W = Math.max(el.clientWidth, 300), H = innerWidth <= 760 ? 200 : Math.max(150, Math.min(260, innerHeight - 668)), m = { t: 18, r: 16, b: 26, l: 44 };
+  const W = Math.max(el.clientWidth, 300), H = altoGraficoCuota(el), m = { t: 18, r: 16, b: 26, l: 44 };
   const yMax = Math.max(100, ...sem.map(s => s.pct)) * 1.08, bw = (W - m.l - m.r) / sem.length;
   const y = v => m.t + (H - m.t - m.b) * (1 - v / yMax);
   let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" height="' + H + '" role="img" aria-label="Porcentaje máximo de la cuota usado en cada semana">';
@@ -2090,7 +2130,7 @@ function renderTop(equipo, totalCosto) {
     celdaCuota(ciclo?.get(g.mb.id) || 0) +
     '<td class="n">' + (g.nPersonal ? '<span class="st bad">' + usd(g.personal) + '</span>' : '—') + '</td></tr>';
   const sinAgente = conCuota && cq.noMedido >= 0.5
-    ? '<tr class="fila-nomed"><td><span class="pos">?</span></td><td>Sin agente / otras sesiones <span class="small">· chat de claude.ai o máquinas sin GestorTokens</span></td><td class="n">' + usd(cq.noMedido / 100 * cq.limite) + '</td><td class="n">—</td><td class="n"><b class="rojo">' + cq.noMedido.toFixed(1) + '%</b></td><td class="n">—</td></tr>' : '';
+    ? '<tr class="fila-nomed" title="Chat de claude.ai o máquinas sin GestorTokens"><td><span class="pos">?</span></td><td>Sin agente / otras sesiones</td><td class="n">' + usd(cq.noMedido / 100 * cq.limite) + '</td><td class="n">—</td><td class="n"><b class="rojo">' + cq.noMedido.toFixed(1) + '%</b></td><td class="n">—</td></tr>' : '';
   $('#tTop').innerHTML = '<thead><tr><th>#</th><th>Miembro</th><th class="n">Costo eq.</th><th class="n">% del total</th><th class="n" title="% del límite semanal de la cuenta que consumió cada uno en el ciclo vigente. Entre paréntesis, el total usado por la cuenta.">Cuota sem.' + (conCuota ? ' <span class="cq-th">(' + Math.round(cq.pct * 100) + '%)</span>' : '') + '</th><th class="n">Personal</th></tr></thead><tbody>' +
     (top.length ? top.map(fila).join('') : '<tr><td colspan="6" class="small">Aún no hay miembros con consumo asignado.</td></tr>') + sinAgente + '</tbody>';
   const maxT = top[0]?.costo || 1;
