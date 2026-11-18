@@ -75,6 +75,10 @@ Ejecutar una vez, en orden, en el SQL Editor (después de `esquema.sql`): [supab
 
 Se recomienda informar al equipo de que el uso de la cuenta compartida se monitorea por proyecto, horario y título de sesión (Ley 29733).
 
+## Cuota del plan (pestaña Cuota)
+
+Anthropic no expone el % de cuota de una suscripción. La líder registra la lectura de **claude.ai › Configuración › Uso** (o `/usage` en Claude Code): % del límite semanal y fecha de reinicio. El panel deduce el límite en costo equivalente y calcula % usado, ritmo, cuándo se agota y ritmo recomendado. Cada lectura nueva compara el % de claude.ai con lo que midieron los agentes: la diferencia es **uso no medido** (alguien usa la cuenta sin el agente). Se guarda en `ajustes` (clave `cuota`), sin migración nueva.
+
 ## 4. Dashboard
 
 Doble clic en `dashboard.html`, iniciar sesión con el usuario del paso 1.4 y escribir el nombre de cada persona junto a su máquina. Las máquinas con el mismo nombre se suman como una sola persona.
