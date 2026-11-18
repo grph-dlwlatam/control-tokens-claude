@@ -54,6 +54,19 @@ function identidad() {
   return { machine_id, hostname, usuario };
 }
 
+// Correo de la cuenta con la que Claude Code tiene sesión iniciada (~/.claude.json > oauthAccount).
+function cuentaClaude() {
+  const rutas = [];
+  if (process.env.CLAUDE_CONFIG_DIR) rutas.push(path.join(process.env.CLAUDE_CONFIG_DIR, '.claude.json'));
+  rutas.push(path.join(os.homedir(), '.claude.json'), path.join(os.homedir(), '.claude', '.claude.json'));
+  for (const r of rutas) {
+    const j = leerJson(r, null);
+    const email = j && j.oauthAccount && j.oauthAccount.emailAddress;
+    if (email) return String(email).toLowerCase();
+  }
+  return '';
+}
+
 // ---------- Lectura de registros ----------
 function carpetasClaude() {
   const dirs = new Set();
@@ -159,6 +172,14 @@ function main() {
     log('ERROR: falta configurar config.json (supabaseUrl y supabaseKey).');
     if (!DRY) process.exit(2);
   }
+  // Solo se mide la cuenta compartida de Claude Code: si la máquina usa otra cuenta, no se envía nada.
+  const cuenta = cuentaClaude();
+  const objetivo = ((cfg && cfg.cuentaClaude) || '').toLowerCase();
+  if (objetivo && cuenta !== objetivo) {
+    log(`Claude Code no usa la cuenta compartida en esta maquina (${cuenta ? cuenta.replace(/^[^@]*/, '***') : 'sin sesion'}). No se envia nada.`);
+    return;
+  }
+
   const estado = leerJson(ESTADO_FILE, {});
   const completo = ARGS.includes('--completo') || !estado.historialEnviado;
   const dias = (cfg && cfg.diasRecalculo) || 7;
