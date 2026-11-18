@@ -278,6 +278,27 @@ dialog#ficha[open] { animation: up .35s cubic-bezier(.2,.7,.2,1); }
   .fila-2 > .alertas { height: 0; min-height: 100%; overflow-y: auto; padding-right: 4px; scrollbar-width: thin; }
 }
 
+/* Diálogo propio y avisos (reemplazan confirm/prompt/alert del navegador) */
+dialog#dlg { width: min(460px, calc(100vw - 32px)); border: 0; border-top: 4px solid var(--lime); border-radius: 10px; padding: 22px 24px 18px; background: var(--surface); color: var(--text); box-shadow: 0 24px 60px rgba(0,0,0,.35); }
+dialog#dlg::backdrop { background: rgba(15,23,48,.5); backdrop-filter: blur(2px); }
+dialog#dlg[open] { animation: up .25s cubic-bezier(.2,.7,.2,1); }
+dialog#dlg.peligro { border-top-color: var(--critical); }
+#dlg h3 { margin: 0 0 6px; font-size: 19px; }
+#dlg p { margin: 0 0 14px; color: var(--text-2); }
+#dlgCampos label { display: block; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--text-2); margin: 10px 0 4px; }
+#dlgCampos input { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg); color: var(--text); font: inherit; }
+#dlgCampos input:focus { outline: 2px solid var(--lime); border-color: var(--lime); }
+.dlg-acciones { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+.dlg-acciones .btn-s { padding: 8px 16px; font-size: 14px; }
+.btn-s.rojo { background: var(--critical); border-color: var(--critical); color: #fff; }
+.avisos { position: fixed; right: 18px; bottom: 18px; z-index: 50; display: grid; gap: 8px; max-width: min(420px, calc(100vw - 36px)); }
+.aviso { display: flex; align-items: center; gap: 12px; background: #1e2c54; color: #fff; border-left: 4px solid var(--lime); border-radius: 8px; padding: 11px 14px; box-shadow: 0 10px 30px rgba(0,0,0,.25); font-size: 14px; animation: up .25s cubic-bezier(.2,.7,.2,1); }
+.aviso.error { border-left-color: #e66767; }
+.aviso span { flex: 1; }
+.aviso button { background: none; border: 0; color: #c8f07f; font: 700 14px 'Barlow', sans-serif; cursor: pointer; padding: 2px 4px; }
+.aviso button.cerrar { color: #8590ab; font-size: 16px; }
+@media (max-width: 760px) { .avisos { left: 12px; right: 12px; bottom: 12px; max-width: none; } }
+
 /* Paginación */
 .pager { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
 .pager:empty { display: none; }
@@ -485,6 +506,15 @@ tbody.animar tr { animation: rowin .45s ease both; }
   </main>
 
   <dialog id="ficha" aria-label="Ficha del miembro"><div id="fichaCont"></div></dialog>
+  <dialog id="dlg" aria-labelledby="dlgTitulo">
+    <form method="dialog" id="dlgForm">
+      <h3 id="dlgTitulo"></h3>
+      <p id="dlgTexto"></p>
+      <div id="dlgCampos"></div>
+      <div class="dlg-acciones"><button type="button" class="btn-s" id="dlgCancelar">Cancelar</button><button class="btn-s primary" id="dlgAceptar">Aceptar</button></div>
+    </form>
+  </dialog>
+  <div class="avisos" id="avisos" role="status" aria-live="polite"></div>
 
   <footer><div><span><b>DLW Latam</b> · Uso interno</span><span><code class="mono">&gt;_</code> Monitoreo de Claude Code · solo totales de tokens, sin prompts ni código</span></div></footer>
 </div>
@@ -839,9 +869,14 @@ function renderEquipo(equipo, totalCosto) {
       </tr>`).join('') : '<tr><td colspan="8" class="small">Aún no hay miembros. Agrégalos abajo y luego asígnales sus máquinas.</td></tr>') + '</tbody>';
   document.querySelectorAll('[data-borrar]').forEach(b => b.addEventListener('click', async () => {
     const mb = miembros.find(x => x.id === b.dataset.borrar);
-    if (!confirm(`¿Eliminar a ${mb?.nombre}? Sus máquinas quedarán sin asignar.`)) return;
-    if (esDemo()) { miembros = miembros.filter(x => x.id !== mb.id); maquinas.forEach(m => { if (m.miembro_id === mb.id) m.miembro_id = null; }); return render(); }
-    try { await api(`miembros?id=eq.${encodeURIComponent(mb.id)}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); await cargar(); } catch (e) { alert('No se pudo eliminar: ' + e.message); }
+    const nMaq = maquinas.filter(m => m.miembro_id === mb.id).length;
+    const ok = await dialogo({ titulo: `¿Eliminar a ${mb.nombre}?`, texto: nMaq ? `Sus ${nMaq} máquina(s) quedarán sin asignar y aparecerán en la alerta de cuadre. Sus sesiones y consumo no se borran.` : 'No tiene máquinas asignadas. Sus datos de consumo no se ven afectados.', aceptar: 'Eliminar miembro', peligro: true });
+    if (!ok) return;
+    try {
+      if (esDemo()) { miembros = miembros.filter(x => x.id !== mb.id); maquinas.forEach(m => { if (m.miembro_id === mb.id) m.miembro_id = null; }); render(); }
+      else { await api(`miembros?id=eq.${encodeURIComponent(mb.id)}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); await cargar(); }
+      aviso(`${mb.nombre} fue eliminado del equipo.`);
+    } catch (e) { aviso('No se pudo eliminar: ' + e.message, 'error'); }
   }));
   document.querySelectorAll('[data-ficha]').forEach(b => b.addEventListener('click', () => abrirFicha(b.dataset.ficha)));
 }
@@ -881,13 +916,14 @@ function renderRanking(ranking, totalCosto) {
     try {
       if (valor === '__nuevo') {
         const sugerido = (m.usuario_windows || '').replace(/_dw$/i, '').replace(/[._-]+/g, ' ');
-        const nombre = (prompt(`Nombre del miembro para ${m.hostname}:`, sugerido) || '').trim();
-        if (!nombre) { sel.value = m.miembro_id || ''; return; }
-        valor = await crearMiembro(nombre);
+        const datos = await dialogo({ titulo: 'Nuevo miembro', texto: `Se creará y se le asignará la máquina ${m.hostname} (${m.usuario_windows}).`, campos: [{ id: 'nombre', etiqueta: 'Nombre', valor: sugerido, requerido: true }, { id: 'correo', etiqueta: 'Correo (opcional)', tipo: 'email', valor: '' }], aceptar: 'Crear y asignar' });
+        if (!datos) { sel.value = m.miembro_id || ''; return; }
+        valor = await crearMiembro(datos.nombre, datos.correo || null);
       }
       if (!esDemo()) await api(`maquinas?machine_id=eq.${encodeURIComponent(m.machine_id)}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ miembro_id: valor }) });
       m.miembro_id = valor; render();
-    } catch (e) { alert('No se pudo guardar: ' + e.message); }
+      aviso(valor ? `${m.hostname} asignada a ${miembroDe(m)?.nombre}.` : `${m.hostname} quedó sin asignar.`);
+    } catch (e) { sel.value = m.miembro_id || ''; aviso('No se pudo guardar: ' + e.message, 'error'); }
   }));
 }
 
@@ -930,15 +966,63 @@ function renderSesiones() {
     try {
       if (!esDemo()) await api(`sesiones?machine_id=eq.${encodeURIComponent(mid)}&session_id=eq.${encodeURIComponent(sid)}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ revision: nueva, revisado_por: nueva ? quien : null, revisado_en: nueva ? new Date().toISOString() : null }) });
       s.revision = nueva; s.revisado_por = nueva ? quien : null; render();
-    } catch (e) { alert('No se pudo guardar: ' + e.message); }
+    } catch (e) { aviso('No se pudo guardar: ' + e.message, 'error'); }
   }));
   document.querySelectorAll('[data-carpeta]').forEach(b => b.addEventListener('click', async () => {
     const c = b.dataset.carpeta;
-    if (!confirm(`¿Marcar "${c}" (y sus subcarpetas) como carpeta de trabajo?\nSus sesiones dejarán de levantar banderas de carpeta y de horario.`)) return;
-    try { await guardarAjuste('carpetas_trabajo', [...new Set([...ajustes.carpetas_trabajo, c])]); } catch (e) { alert('No se pudo guardar: ' + e.message); }
+    // Acción reversible: se aplica al instante y el aviso ofrece deshacer.
+    const antes = [...ajustes.carpetas_trabajo];
+    try {
+      await guardarAjuste('carpetas_trabajo', [...new Set([...antes, c])]);
+      aviso(`«${c}» marcada como carpeta de trabajo.`, 'ok', { texto: 'Deshacer', accion: () => guardarAjuste('carpetas_trabajo', antes).then(() => aviso('Cambio deshecho.')) });
+    } catch (e) { aviso('No se pudo guardar: ' + e.message, 'error'); }
   }));
   responsiva('#tSesiones');
   renderAjustes();
+}
+
+// ---------- diálogo y avisos propios ----------
+// dialogo({ titulo, texto, aceptar, peligro, campos:[{id, etiqueta, valor, tipo, requerido}] })
+// Devuelve true/false (sin campos) o un objeto con los valores (con campos) / null si se cancela.
+function dialogo({ titulo, texto = '', aceptar = 'Aceptar', peligro = false, campos = [] }) {
+  const dlg = $('#dlg');
+  $('#dlgTitulo').textContent = titulo;
+  $('#dlgTexto').textContent = texto;
+  $('#dlgCampos').innerHTML = campos.map(c => '<label for="dlg_' + c.id + '">' + esc(c.etiqueta) + '</label><input id="dlg_' + c.id + '" type="' + (c.tipo || 'text') + '" value="' + esc(c.valor || '') + '"' + (c.requerido ? ' required' : '') + '>').join('');
+  const btn = $('#dlgAceptar');
+  btn.textContent = aceptar;
+  btn.className = 'btn-s ' + (peligro ? 'rojo' : 'primary');
+  dlg.classList.toggle('peligro', peligro);
+  return new Promise(resolve => {
+    const cerrar = valor => { dlg.close(); limpiar(); resolve(valor); };
+    const enviar = e => {
+      e.preventDefault();
+      if (!$('#dlgForm').reportValidity()) return;
+      if (!campos.length) return cerrar(true);
+      cerrar(Object.fromEntries(campos.map(c => [c.id, $('#dlg_' + c.id).value.trim()])));
+    };
+    const cancelar = () => cerrar(campos.length ? null : false);
+    const alCancelar = e => { e.preventDefault(); cancelar(); };
+    const limpiar = () => { $('#dlgForm').removeEventListener('submit', enviar); $('#dlgCancelar').removeEventListener('click', cancelar); dlg.removeEventListener('cancel', alCancelar); };
+    $('#dlgForm').addEventListener('submit', enviar);
+    $('#dlgCancelar').addEventListener('click', cancelar);
+    dlg.addEventListener('cancel', alCancelar); // tecla Esc
+    dlg.showModal();
+    (campos.length ? $('#dlg_' + campos[0].id) : (peligro ? $('#dlgCancelar') : btn)).focus();
+  });
+}
+
+// aviso(texto, 'ok' | 'error', { texto, accion }) — aviso breve abajo a la derecha, con acción opcional (p. ej. Deshacer).
+function aviso(texto, tipo = 'ok', accion = null) {
+  const el = document.createElement('div');
+  el.className = 'aviso' + (tipo === 'error' ? ' error' : '');
+  el.innerHTML = '<span></span>' + (accion ? '<button class="accion"></button>' : '') + '<button class="cerrar" aria-label="Cerrar aviso">×</button>';
+  el.querySelector('span').textContent = texto;
+  const quitar = () => el.remove();
+  if (accion) { const b = el.querySelector('.accion'); b.textContent = accion.texto; b.onclick = () => { quitar(); accion.accion(); }; }
+  el.querySelector('.cerrar').onclick = quitar;
+  $('#avisos').appendChild(el);
+  setTimeout(quitar, tipo === 'error' ? 9000 : accion ? 7000 : 3500);
 }
 
 // ---------- paginación ----------
@@ -1026,8 +1110,11 @@ function renderAjustes() {
     ? ajustes.carpetas_trabajo.map((c, i) => `<span class="chip">${esc(c)} <button class="x" data-quitar="${i}" aria-label="Quitar ${esc(c)}">×</button></span>`).join('')
     : '<span class="small">Ninguna todavía. Márcalas desde la tabla de sesiones.</span>';
   document.querySelectorAll('[data-quitar]').forEach(b => b.addEventListener('click', async () => {
-    const lista = ajustes.carpetas_trabajo.filter((_, i) => i !== +b.dataset.quitar);
-    try { await guardarAjuste('carpetas_trabajo', lista); } catch (e) { alert('No se pudo guardar: ' + e.message); }
+    const antes = [...ajustes.carpetas_trabajo], quitada = antes[+b.dataset.quitar];
+    try {
+      await guardarAjuste('carpetas_trabajo', antes.filter((_, i) => i !== +b.dataset.quitar));
+      aviso(`«${quitada}» ya no es carpeta de trabajo.`, 'ok', { texto: 'Deshacer', accion: () => guardarAjuste('carpetas_trabajo', antes).then(() => aviso('Cambio deshecho.')) });
+    } catch (e) { aviso('No se pudo guardar: ' + e.message, 'error'); }
   }));
 }
 
@@ -1171,9 +1258,9 @@ $('#rango').addEventListener('click', e => {
   document.querySelectorAll('#rango button').forEach(x => x.setAttribute('aria-pressed', x === b));
   dias = +b.dataset.d;
   if (location.hash === '#demo') return demo();
-  cargar().catch(err => alert(err.message));
+  cargar().catch(err => aviso(err.message, 'error'));
 });
-$('#bRefrescar').addEventListener('click', () => esDemo() ? demo() : cargar().catch(err => alert(err.message)));
+$('#bRefrescar').addEventListener('click', () => esDemo() ? demo() : cargar().catch(err => aviso(err.message, 'error')));
 $('#fSes').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   document.querySelectorAll('#fSes button').forEach(x => x.setAttribute('aria-pressed', x === b));
@@ -1186,7 +1273,7 @@ $('#fSesMiembro').addEventListener('change', e => { filtroMiembro = e.target.val
 let tb; $('#fSesBuscar').addEventListener('input', e => { clearTimeout(tb); tb = setTimeout(() => { busqueda = normalizar(e.target.value); pagina.sesiones = 1; renderSesiones(); }, 200); });
 $('#aGuardar').addEventListener('click', async () => {
   const lista = [...new Set($('#aPalabras').value.split(',').map(normalizar).filter(Boolean))];
-  try { await guardarAjuste('palabras_personales', lista); $('#aEstado').textContent = `Guardado · ${lista.length} palabras`; } catch (e) { alert('No se pudo guardar: ' + e.message); }
+  try { await guardarAjuste('palabras_personales', lista); $('#aEstado').textContent = ''; aviso(`Palabras clave guardadas (${lista.length}).`); } catch (e) { aviso('No se pudo guardar: ' + e.message, 'error'); }
 });
 $('#fMiembro').addEventListener('submit', async e => {
   e.preventDefault();
@@ -1196,7 +1283,8 @@ $('#fMiembro').addEventListener('submit', async e => {
     if (esDemo()) { miembros.push({ id: 'm' + Date.now(), nombre, correo, activo: true }); render(); }
     else { await api('miembros', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ nombre, correo }) }); await cargar(); }
     $('#mNombre').value = ''; $('#mCorreo').value = '';
-  } catch (err) { alert('No se pudo agregar: ' + err.message); }
+    aviso(`${nombre} agregado al equipo.`);
+  } catch (err) { aviso('No se pudo agregar: ' + err.message, 'error'); }
 });
 $('#bSalir').addEventListener('click', () => { store.del('ct_sesion'); sesion = null; mostrar('login'); });
 let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => consumo.length && render(), 150); });
