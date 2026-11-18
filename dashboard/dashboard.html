@@ -508,6 +508,7 @@ dialog#dlg.peligro { border-top-color: var(--critical); }
 }
 
 .declara { font-size: 12px; color: var(--good); font-weight: 600; margin-top: 1px; }
+[data-panel="resumen"] > .fila-2b { margin-bottom: 0; }
 /* Paginación */
 .pager { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
 .pager:empty { display: none; }
@@ -967,6 +968,7 @@ function render() {
   renderFiltroEq();
   renderAlertas(total.costo, mapeado, sinAsignar, equipo);
   const orden = [...equipo.filter(g => g.costo > 0).map(g => g.mb.nombre), ...(sinAsignar.some(a => a.costo > 0) ? ['Sin asignar'] : [])];
+  ultimoOrden = orden;
   renderChart(orden);
   renderEquipo(equipo, total.costo);
   renderTop(equipo, total.costo);
@@ -979,6 +981,23 @@ function render() {
   renderModelos();
   ['#tEquipo', '#tRanking', '#tTop', '#tModelos'].forEach(responsiva);
   animar = false;
+  requestAnimationFrame(ajustarAltoResumen);
+}
+
+// El Resumen debe caber en una pantalla: se mide el espacio libre (o lo que sobra) y se ajusta el alto del gráfico.
+let altoGrafico = null, ultimoOrden = [];
+function ajustarAltoResumen() {
+  const panel = document.querySelector('[data-panel="resumen"]');
+  if (!panel || panel.hidden || innerWidth <= 760 || !consumo.length) return;
+  const svg = document.querySelector('#chart svg'); if (!svg) return;
+  const H = +svg.getAttribute('height');
+  const pie = document.querySelector('footer').offsetHeight;
+  const ultimo = panel.lastElementChild, margen = ultimo ? parseFloat(getComputedStyle(ultimo).marginBottom) || 0 : 0;
+  const finContenido = panel.getBoundingClientRect().bottom + scrollY + margen + 16 + pie;
+  const sobra = document.documentElement.scrollHeight - innerHeight; // >0: hay desplazamiento
+  const libre = sobra > 0 ? -sobra : innerHeight - finContenido;
+  const nuevo = Math.round(Math.max(130, Math.min(320, H + libre - 2)));
+  if (Math.abs(nuevo - H) > 3) { altoGrafico = nuevo; renderChart(ultimoOrden); }
 }
 
 // Cuadre: todo lo gastado debe estar asignado a un miembro.
@@ -1036,7 +1055,7 @@ function renderChart(personasOrden) {
 
   $('#legend').innerHTML = series.map(s => `<span><i style="background:${color(s)}"></i>${esc(s)}</span>`).join('');
 
-  const el = $('#chart'), W = Math.max(el.clientWidth, 300), H = innerWidth <= 760 ? 220 : Math.round(Math.max(130, Math.min(300, innerHeight - 736))), m = { t: 8, r: 8, b: 26, l: 56 };
+  const el = $('#chart'), W = Math.max(el.clientWidth, 300), H = innerWidth <= 760 ? 220 : (altoGrafico || Math.round(Math.max(130, Math.min(300, innerHeight - 736)))), m = { t: 8, r: 8, b: 26, l: 56 };
   const maxV = Math.max(0.01, ...[...datos.values()].map(d => series.reduce((s, k) => s + d[k], 0)));
   const paso = nice(maxV / 4), yMax = Math.ceil(maxV / paso) * paso;
   const y = v => m.t + (H - m.t - m.b) * (1 - v / yMax);
@@ -1705,7 +1724,7 @@ $('#fEquipo').addEventListener('submit', async e => {
   } catch (err) { aviso('No se pudo crear: ' + err.message, 'error'); }
 });
 $('#bSalir').addEventListener('click', () => { store.del('ct_sesion'); sesion = null; mostrar('login'); });
-let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => consumo.length && render(), 150); });
+let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { altoGrafico = null; if (consumo.length) render(); }, 150); });
 setInterval(() => { if (sesion && !$('#vDash').hidden) cargar().catch(() => {}); }, 5 * 60 * 1000);
 iniciar();
 </script>
