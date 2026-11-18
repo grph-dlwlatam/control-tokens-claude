@@ -55,7 +55,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 'Ba
 .btn:hover, .seg button:hover:not([aria-pressed="true"]) { background: var(--lime); color: var(--navy); }
 .btn.primary { background: var(--lime); color: var(--navy); }
 .btn.primary:hover { background: var(--lime-strong); }
-main { max-width: 1680px; margin: 0 auto; padding: 24px 16px 40px; }
+main { max-width: 1680px; margin: 0 auto; padding: 16px 16px 16px; }
 /* Títulos de sección como el sitio: mayúsculas con subrayado verde */
 h2 { font-size: 14px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin: 0 0 14px; color: var(--text); }
 h2::after { content: ""; display: block; width: 36px; height: 3px; background: var(--lime); margin-top: 6px; border-radius: 2px; }
@@ -262,6 +262,38 @@ dialog#ficha[open] { animation: up .35s cubic-bezier(.2,.7,.2,1); }
   footer div { flex-direction: column; text-align: center; }
 }
 
+/* Resumen compacto: cabe en una pantalla */
+@media (min-width: 761px) {
+  [data-panel="resumen"] .card { padding: 14px 18px; }
+  [data-panel="resumen"] h2 { margin-bottom: 10px; }
+  [data-panel="resumen"] .kpi { padding: 12px 16px; }
+  [data-panel="resumen"] .kpi .val { font-size: 27px; }
+  [data-panel="resumen"] .legend { margin-bottom: 6px; }
+  [data-panel="resumen"] .note { margin-top: 6px; }
+  .fila-2 .alertas { gap: 8px; }
+}
+@media (min-width: 1200px) {
+  .fila-2 .alerta { padding: 8px 12px; }
+  /* La fila la dimensiona el gráfico; si hay muchas alertas, se desplazan dentro de su columna. */
+  .fila-2 > .alertas { height: 0; min-height: 100%; overflow-y: auto; padding-right: 4px; scrollbar-width: thin; }
+}
+
+/* Paginación */
+.pager { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.pager:empty { display: none; }
+.pg-btns { display: flex; gap: 4px; flex-wrap: wrap; }
+.pg { min-width: 34px; height: 34px; padding: 0 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 6px; font: 600 14px 'Barlow', sans-serif; cursor: pointer; }
+.pg:hover:not(:disabled) { border-color: var(--lime); }
+.pg.on { background: var(--lime); border-color: var(--lime); color: #1e2c54; }
+.pg:disabled { opacity: .4; cursor: default; }
+.pg-gap { padding: 0 4px; align-self: center; color: var(--muted); }
+.h2-link { position: relative; padding-right: 150px; }
+.h2-link .link-s { position: absolute; right: 0; top: 0; }
+.h2-link .link-s { text-transform: none; letter-spacing: 0; font-size: 13px; }
+#tTop td, #tModelos td { padding-top: 7px; padding-bottom: 7px; }
+#tTop .pos { width: 22px; height: 22px; }
+@media (max-width: 760px) { .pager { justify-content: center; } .pg { min-width: 40px; height: 40px; } }
+
 /* Distribución en pantallas anchas */
 .fila-2, .fila-2b { display: grid; gap: 18px; margin-bottom: 18px; }
 .fila-2 > .card, .fila-2b > .card, .fila-2 > .alertas { margin-bottom: 0; }
@@ -380,14 +412,13 @@ tbody.animar tr { animation: rowin .45s ease both; }
 
       <div class="fila-2b">
         <div class="card anim" style="animation-delay:.32s">
-          <h2>Top 5 miembros</h2>
+          <h2 class="h2-link">Top 5 miembros <button class="link-s" data-ir="equipo">Ver todo el equipo →</button></h2>
           <div class="tbl-wrap"><table id="tTop"></table></div>
-          <p class="note"><button class="link-s" data-ir="equipo">Ver todo el equipo →</button></p>
         </div>
         <div class="card anim" style="animation-delay:.38s">
           <h2>Consumo por modelo</h2>
           <div class="tbl-wrap"><table id="tModelos"></table></div>
-          <p class="note">Costo equivalente = lo que costaría a precio de API (USD por millón de tokens; escritura de caché a 1,25× la entrada). Con suscripción no se cobra por token: sirve para comparar quién consume más de la cuota compartida.</p>
+          <p class="note" title="USD por millón de tokens; escritura de caché a 1,25× la entrada. Con suscripción no se cobra por token: sirve para comparar quién consume más de la cuota compartida.">Costo equivalente a precio de API, para comparar consumo ⓘ</p>
         </div>
       </div>
     </div>
@@ -397,6 +428,7 @@ tbody.animar tr { animation: rowin .45s ease both; }
       <div class="card anim" id="secEquipo">
         <h2>Equipo · ranking por miembro</h2>
         <div class="tbl-wrap"><table id="tEquipo"></table></div>
+        <div class="pager" id="pgEquipo"></div>
         <form class="fila-form" id="fMiembro">
           <input id="mNombre" placeholder="Nombre del miembro" required aria-label="Nombre del miembro">
           <input id="mCorreo" type="email" placeholder="correo@dlwlatam.com (opcional)" aria-label="Correo del miembro">
@@ -411,6 +443,7 @@ tbody.animar tr { animation: rowin .45s ease both; }
       <div class="card anim" id="secMaquinas">
         <h2>Máquinas con la cuenta de Delaware</h2>
         <div class="tbl-wrap"><table id="tRanking"></table></div>
+        <div class="pager" id="pgMaquinas"></div>
         <p class="note">Elige a qué miembro pertenece cada máquina (o crea uno con «+ Nuevo miembro…»); se guarda al instante. El consumo de máquinas sin asignar aparece como alerta de cuadre.</p>
       </div>
     </div>
@@ -428,6 +461,7 @@ tbody.animar tr { animation: rowin .45s ease both; }
           <span class="small" id="sesResumen"></span>
         </div>
         <div class="tbl-wrap"><table id="tSesiones"></table></div>
+        <div class="pager" id="pgSesiones"></div>
         <p class="note">El título lo genera Claude Code automáticamente para cada conversación; no se guardan prompts ni código. Banderas: título con palabras no laborales, horario fuera de L–V 8:00–19:00, sesión sin carpeta de proyecto (Escritorio, Descargas, carpeta de usuario) y costo muy superior a lo habitual.</p>
       </div>
     </div>
@@ -736,7 +770,7 @@ function renderChart(personasOrden) {
 
   $('#legend').innerHTML = series.map(s => `<span><i style="background:${color(s)}"></i>${esc(s)}</span>`).join('');
 
-  const el = $('#chart'), W = Math.max(el.clientWidth, 300), H = 260, m = { t: 8, r: 8, b: 26, l: 56 };
+  const el = $('#chart'), W = Math.max(el.clientWidth, 300), H = innerWidth <= 760 ? 220 : Math.round(Math.max(130, Math.min(300, innerHeight - 712))), m = { t: 8, r: 8, b: 26, l: 56 };
   const maxV = Math.max(0.01, ...[...datos.values()].map(d => series.reduce((s, k) => s + d[k], 0)));
   const paso = nice(maxV / 4), yMax = Math.ceil(maxV / paso) * paso;
   const y = v => m.t + (H - m.t - m.b) * (1 - v / yMax);
@@ -791,9 +825,10 @@ function estadoReporte(ts) {
 
 function renderEquipo(equipo, totalCosto) {
   const maxC = equipo[0]?.costo || 1;
+  const { ini, vis: pagEq } = paginar('equipo', equipo, '#pgEquipo');
   $('#tEquipo').innerHTML = `<thead><tr><th>#</th><th>Miembro</th><th>Máquinas</th><th class="n">Costo eq.</th><th class="n">% del total</th><th class="n">Uso personal</th><th>Último reporte</th><th></th></tr></thead><tbody class="${animar ? 'animar' : ''}">` +
-    (equipo.length ? equipo.map((g, i) => `<tr style="animation-delay:${Math.min(i, 12) * 45}ms">
-        <td><span class="pos">${i + 1}</span></td>
+    (pagEq.length ? pagEq.map((g, i) => `<tr style="animation-delay:${Math.min(i, 12) * 45}ms">
+        <td><span class="pos">${ini + i + 1}</span></td>
         <td><button class="link-m" data-ficha="${esc(g.mb.id)}" title="Ver ficha de ${esc(g.mb.nombre)}">${esc(g.mb.nombre)}</button>${g.mb.correo ? `<div class="small">${esc(g.mb.correo)}</div>` : ''}</td>
         <td>${g.maquinas.map(m => `<span class="chip">${esc(m.hostname)}</span>`).join('') || '<span class="small">ninguna</span>'}</td>
         <td class="n"><b>${usd(g.costo)}</b></td>
@@ -822,12 +857,13 @@ async function crearMiembro(nombre, correo = null) {
 
 function renderRanking(ranking, totalCosto) {
   const maxC = ranking[0]?.costo || 1;
+  const { ini, vis: pagMaq } = paginar('maquinas', ranking, '#pgMaquinas');
   const opciones = id => `<option value="">— Sin asignar —</option>` + miembros.map(mb => `<option value="${esc(mb.id)}"${mb.id === id ? ' selected' : ''}>${esc(mb.nombre)}</option>`).join('') + '<option value="__nuevo">+ Nuevo miembro…</option>';
   $('#tRanking').innerHTML = `<thead><tr><th>#</th><th>Miembro</th><th>Equipo · usuario Windows</th><th class="n">Costo eq.</th><th class="n">% del total</th><th class="n">Salida</th><th class="n">Entrada + caché</th><th class="n">Mensajes</th><th>Modelo principal</th><th>Último reporte</th></tr></thead><tbody class="${animar ? 'animar' : ''}">` +
-    ranking.map((a, i) => {
+    pagMaq.map((a, i) => {
       const princ = [...a.modelos.entries()].sort((x, y) => y[1] - x[1])[0]?.[0] || '—';
       return `<tr style="animation-delay:${Math.min(i, 12) * 45}ms">
-        <td><span class="pos">${i + 1}</span></td>
+        <td><span class="pos">${ini + i + 1}</span></td>
         <td><select class="asignar" data-id="${esc(a.m.machine_id)}" aria-label="Miembro de ${esc(a.m.hostname)}">${opciones(a.m.miembro_id)}</select></td>
         <td>${esc(a.m.hostname)} · ${esc(a.m.usuario_windows)}<div class="small">${esc(a.m.machine_id.slice(0, 8))}${a.m.version_agente ? ' · agente ' + esc(a.m.version_agente) : ''}</div></td>
         <td class="n"><b>${usd(a.costo)}</b></td>
@@ -868,8 +904,8 @@ function renderSesiones() {
     if (filtroSes === 'personal') return s.revision === 'personal';
     return true;
   }).sort((a, b) => b.costo - a.costo);
-  const MAX = 150, vis = lista.slice(0, MAX);
-  $('#sesResumen').textContent = `${lista.length} sesión(es) · ${usd(lista.reduce((x, s) => x + s.costo, 0))}${lista.length > MAX ? ` · mostrando las ${MAX} más costosas` : ''}`;
+  const { vis } = paginar('sesiones', lista, '#pgSesiones');
+  $('#sesResumen').textContent = `${lista.length} sesión(es) · ${usd(lista.reduce((x, s) => x + s.costo, 0))}`;
   const fh = d => d ? new Date(d).toLocaleString('es-PE', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
   const dur = s => { const m = (new Date(s.fin) - new Date(s.inicio)) / 6e4; return !isFinite(m) ? '—' : m < 60 ? `${Math.max(1, Math.round(m))} min` : `${(m / 60).toFixed(1)} h`; };
   $('#tSesiones').innerHTML = `<thead><tr><th>Inicio</th><th>Miembro</th><th>Título de la sesión · carpeta</th><th class="n">Duración</th><th class="n">Costo eq.</th><th>Banderas</th><th>Revisión</th></tr></thead><tbody>` +
@@ -905,6 +941,42 @@ function renderSesiones() {
   renderAjustes();
 }
 
+// ---------- paginación ----------
+// Las filas por página se calculan con el alto de la ventana para que cada pestaña quepa en una pantalla.
+const pagina = { equipo: 1, maquinas: 1, sesiones: 1 };
+const RESERVA = { equipo: 440, maquinas: 400, sesiones: 545 }; // px ocupados por cabecera, filtros, notas y pie
+const ALTO_FILA = 58;
+function tamPagina(clave) {
+  if (innerWidth <= 760) return 5;
+  return Math.max(4, Math.floor((innerHeight - RESERVA[clave]) / ALTO_FILA));
+}
+function paginar(clave, lista, sel) {
+  const tam = tamPagina(clave), paginas = Math.max(1, Math.ceil(lista.length / tam));
+  pagina[clave] = Math.min(Math.max(1, pagina[clave]), paginas);
+  const ini = (pagina[clave] - 1) * tam, fin = Math.min(ini + tam, lista.length);
+  const el = $(sel);
+  if (el) el.innerHTML = paginas > 1 ? htmlPaginador(clave, pagina[clave], paginas, ini, fin, lista.length) : '';
+  return { ini, vis: lista.slice(ini, fin) };
+}
+function htmlPaginador(clave, p, n, a, b, total) {
+  const nums = [];
+  for (let i = 1; i <= n; i++) {
+    if (i === 1 || i === n || Math.abs(i - p) <= 1) nums.push(i);
+    else if (nums.at(-1) !== '…') nums.push('…');
+  }
+  const btn = (x, txt, etiqueta, off) => '<button class="pg' + (x === p && !etiqueta ? ' on' : '') + '" data-pag="' + clave + ':' + x + '"' + (off ? ' disabled' : '') + (etiqueta ? ' aria-label="' + etiqueta + '"' : (x === p ? ' aria-current="page"' : '')) + '>' + txt + '</button>';
+  return '<span class="small">' + (a + 1) + '–' + b + ' de ' + total + '</span><div class="pg-btns">' +
+    btn(p - 1, '‹', 'Página anterior', p === 1) +
+    nums.map(x => x === '…' ? '<span class="pg-gap">…</span>' : btn(x, x)).join('') +
+    btn(p + 1, '›', 'Página siguiente', p === n) + '</div>';
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-pag]'); if (!b || b.disabled) return;
+  const [clave, n] = b.dataset.pag.split(':');
+  pagina[clave] = +n;
+  if (clave === 'sesiones') renderSesiones(); else render();
+});
+
 // ---------- pestañas ----------
 let tabActiva = 'resumen';
 function irA(tab) {
@@ -937,7 +1009,7 @@ function badge(sel, texto, clase) { const el = $(sel); el.innerHTML = texto; el.
 function renderTop(equipo, totalCosto) {
   const top = equipo.filter(g => g.costo > 0).slice(0, 5), maxC = top[0]?.costo || 1;
   const fila = (g, i) => '<tr><td><span class="pos">' + (i + 1) + '</span></td>' +
-    '<td><button class="link-m" data-ficha="' + esc(g.mb.id) + '">' + esc(g.mb.nombre) + '</button><div class="small">' + g.maquinas.length + ' máquina(s)</div></td>' +
+    '<td><button class="link-m" data-ficha="' + esc(g.mb.id) + '">' + esc(g.mb.nombre) + '</button> <span class="small">· ' + g.maquinas.length + ' máq.</span></td>' +
     '<td class="n"><b>' + usd(g.costo) + '</b></td>' +
     '<td class="n"><div class="share">' + pct(g.costo / (totalCosto || 1)) + '<span class="bar"><i style="width:' + (g.costo / maxC * 100).toFixed(1) + '%"></i></span></div></td>' +
     '<td class="n">' + (g.nPersonal ? '<span class="st bad">' + usd(g.personal) + '</span>' : '—') + '</td></tr>';
@@ -1105,13 +1177,13 @@ $('#bRefrescar').addEventListener('click', () => esDemo() ? demo() : cargar().ca
 $('#fSes').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   document.querySelectorAll('#fSes button').forEach(x => x.setAttribute('aria-pressed', x === b));
-  filtroSes = b.dataset.f; renderSesiones();
+  filtroSes = b.dataset.f; pagina.sesiones = 1; renderSesiones();
 });
 document.querySelector('.tabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) irA(b.dataset.tab); });
 document.addEventListener('click', e => { const a = e.target.closest('[data-ir]'); if (a) { e.preventDefault(); irA(a.dataset.ir); } });
 irA(store.get('ct_tab') || 'resumen');
-$('#fSesMiembro').addEventListener('change', e => { filtroMiembro = e.target.value; renderSesiones(); });
-let tb; $('#fSesBuscar').addEventListener('input', e => { clearTimeout(tb); tb = setTimeout(() => { busqueda = normalizar(e.target.value); renderSesiones(); }, 200); });
+$('#fSesMiembro').addEventListener('change', e => { filtroMiembro = e.target.value; pagina.sesiones = 1; renderSesiones(); });
+let tb; $('#fSesBuscar').addEventListener('input', e => { clearTimeout(tb); tb = setTimeout(() => { busqueda = normalizar(e.target.value); pagina.sesiones = 1; renderSesiones(); }, 200); });
 $('#aGuardar').addEventListener('click', async () => {
   const lista = [...new Set($('#aPalabras').value.split(',').map(normalizar).filter(Boolean))];
   try { await guardarAjuste('palabras_personales', lista); $('#aEstado').textContent = `Guardado · ${lista.length} palabras`; } catch (e) { alert('No se pudo guardar: ' + e.message); }
