@@ -9,11 +9,11 @@ func TestValidarIdentidad(t *testing.T) {
 	}{
 		{"Ana Ruiz", "ana.ruiz@dlwlatam.com", true},
 		{"Ana Ruiz Pérez", "ANA.RUIZ@DLWLATAM.COM", true},
-		{"Ana", "ana@dlwlatam.com", false},                  // falta apellido
-		{"Ana Ruiz", "ana.ruiz@gmail.com", false},           // otro dominio
-		{"Ana Ruiz", "ana.ruiz@dlwlatam.com.pe", false},     // dominio parecido
-		{"Ana Ruiz", "ana.ruiz@fake-dlwlatam.com", false},   // dominio parecido
-		{"Ana Ruiz", "ana ruiz@dlwlatam.com", false},        // espacio
+		{"Ana", "ana@dlwlatam.com", false},                // falta apellido
+		{"Ana Ruiz", "ana.ruiz@gmail.com", false},         // otro dominio
+		{"Ana Ruiz", "ana.ruiz@dlwlatam.com.pe", false},   // dominio parecido
+		{"Ana Ruiz", "ana.ruiz@fake-dlwlatam.com", false}, // dominio parecido
+		{"Ana Ruiz", "ana ruiz@dlwlatam.com", false},      // espacio
 		{"Ana Ruiz", "", false},
 	}
 	for _, c := range casos {

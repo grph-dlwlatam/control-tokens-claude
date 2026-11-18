@@ -7,10 +7,16 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"syscall"
 	"unsafe"
 )
+
+// Una ventana Win32 solo recibe mensajes en el hilo del sistema que la creó. Sin esto, el
+// planificador de Go puede mover la goroutine a otro hilo y la ventana deja de responder
+// (se "cuelga" mientras se escribe). Fijar el hilo en init garantiza que main corre siempre en el mismo.
+func init() { runtime.LockOSThread() }
 
 type identidad struct {
 	Nombre string `json:"nombre"`

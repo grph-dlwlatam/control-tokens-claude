@@ -35,7 +35,7 @@ import (
 )
 
 const (
-	version       = "2.2.0"
+	version       = "2.2.1"
 	nombreTarea   = "GestorTokensDLW"
 	nombreExe     = "GestorTokens.exe"
 	diasRecalculo = 7
