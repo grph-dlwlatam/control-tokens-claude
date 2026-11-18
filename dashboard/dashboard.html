@@ -1153,7 +1153,8 @@ function renderAlertas(totalCosto, mapeado, sinAsignar, equipo) {
   if (sinMaquina.length) al.push(['warn', '?', `${sinMaquina.length} miembro(s) sin ninguna máquina reportando`, sinMaquina.map(g => esc(g.mb.nombre)).join(', ') + ' · ¿instalaron el agente?']);
   const pendientes = sesiones.filter(s => s.banderas.length && !s.revision);
   const cq = calcularCuota();
-  if (cq) {
+  if (cq?.calibInvalida) al.push(['warn', '⏱', 'La calibración manual de la cuota no es coherente', 'Se hizo con muy poco consumo medido. <a href="#" data-ir="cuota">Revisar cuota</a>']);
+  else if (cq) {
     if (cq.agotaAntes) al.push(['bad', '⏱', `Al ritmo actual la cuota semanal se agota el ${fechaCorta(cq.fechaAgota)}`, `Va en ${Math.round(cq.pct * 100)}% y el reinicio es el ${fechaCorta(cq.reinicio)}. <a href="#" data-ir="cuota">Ver cuota</a>`]);
     else if (cq.pct >= 0.8) al.push(['warn', '⏱', `La cuota semanal va en ${Math.round(cq.pct * 100)}%`, `Reinicia el ${fechaCorta(cq.reinicio)}. <a href="#" data-ir="cuota">Ver cuota</a>`]);
     if (cq.noMedido >= 5) al.push(['warn', '?', `${cq.noMedido.toFixed(0)}% de la cuota no lo explican los agentes`, 'claude.ai marcó más uso del que reportan las máquinas: alguien usa la cuenta sin el agente. <a href="#" data-ir="cuota">Ver cuota</a>']);
@@ -1657,23 +1658,27 @@ function calcularCuota() {
   const { inicio, reinicio } = cicloDesde(reinicioIso, ahora);
   const sesion = auto && auto.sesion_pct != null && auto.sesion_reinicio && new Date(auto.sesion_reinicio).getTime() > ahora
     ? { pct: +auto.sesion_pct, reinicio: new Date(auto.sesion_reinicio).getTime() } : null;
-  let limite = c?.limite || null, pct, noMedido, ult, desglose = null;
+  let limite = null, pct, noMedido, ult, desglose = null;
   if (auto) {
+    // Con lectura automática se ignora la calibración manual: el límite se deduce en cada lectura
+    // de la parte de Claude Code (lo que miden los agentes), con un mínimo para no amplificar ruido.
     const leido = new Date(auto.leido).getTime(), pctLeido = +auto.semanal_pct / 100, medidoLeido = consumoEntre(inicio, leido);
     desglose = auto.detalle?.desglose || null;
-    // Sin calibración manual, el límite se deduce de la parte de Claude Code (lo que miden los agentes).
     const pctCode = desglose && desglose.claude_code != null ? +desglose.claude_code / 100 : pctLeido;
-    if (!limite && pctCode >= 0.01 && medidoLeido > 0) limite = medidoLeido / pctCode;
+    if (pctCode >= 0.03 && medidoLeido >= 1) limite = medidoLeido / pctCode;
     pct = pctLeido + (limite ? consumoEntre(leido, ahora) / limite : 0);
     const medidoPct = limite ? medidoLeido / limite * 100 : 0;
     noMedido = limite ? Math.max(0, pctLeido * 100 - medidoPct) : 0;
     ult = { fecha: auto.leido, pct: +auto.semanal_pct, medidoPct, auto: true };
     if (!limite) return { sinLimite: true, auto: true, inicio, reinicio, pct, sesion, ultima: ult, desglose, noMedido: 0 };
   } else {
+    limite = c?.limite || null;
     if (!limite) return null;
     pct = consumoEntre(inicio, ahora) / limite;
     ult = (c.lecturas || []).at(-1);
     noMedido = ult ? Math.max(0, ult.pct - ult.medidoPct) : 0;
+    // Una calibración hecha con casi nada medido da un límite absurdo (p. ej. 73345%): se marca inválida.
+    if (pct > 2) return { calibInvalida: true, inicio, reinicio, limite, medido: consumoEntre(inicio, ahora), pct, ultima: ult, noMedido: 0 };
   }
   const usado = pct * limite;                                           // incluye el uso que no reportan los agentes
   const transcurrido = Math.max(ahora - inicio, 6 * 36e5);              // mínimo 6 h para no exagerar el ritmo al inicio
@@ -1704,6 +1709,16 @@ function renderCuota() {
     $('#cqGrafico').innerHTML = '<p class="lm-vacio">El gráfico aparece después de la primera lectura.</p>';
     $('#cqLeyenda').innerHTML = '';
     $('#cqQuien').innerHTML = '<p class="lm-vacio">—</p>';
+    return;
+  }
+  if (cq.calibInvalida) {
+    if (!manual.dataset.tocado) manual.open = true;
+    badge('#bCuota', '!', 'rojo');
+    $('#cqMedidor').innerHTML = '<h2>Cuota semanal del plan</h2><div class="cq-vacio"><div class="cq-donut vacio"><span>!</span></div><p>La calibración manual no es coherente: fijó un límite de <b>' + usd(cq.limite) + '</b> y los agentes ya midieron <b>' + usd(cq.medido) + '</b> en este ciclo. Ocurre cuando se calibra con casi nada medido.</p></div>';
+    $('#cqProy').innerHTML = '<h2>Proyección</h2><p class="small">Borra la calibración y espera la lectura automática de un GestorTokens 2.3.0, o registra una lectura manual nueva.</p><button class="btn-s primary" id="cqBorrar">Borrar calibración</button>';
+    $('#cqCalibInfo').innerHTML = '<div class="cq-estado-lect"><span class="cq-pill warn">Manual inválida</span><span>' + (cq.ultima ? fechaCorta(cq.ultima.fecha) : '') + '</span></div>';
+    $('#cqBorrar').addEventListener('click', borrarCalibracion);
+    $('#cqGrafico').innerHTML = '<p class="lm-vacio">—</p>'; $('#cqLeyenda').innerHTML = ''; $('#cqQuien').innerHTML = '<p class="lm-vacio">—</p>';
     return;
   }
   if (!manual.dataset.tocado) manual.open = false;
@@ -1813,8 +1828,8 @@ async function registrarLectura(e) {
   if (reinicio.getTime() <= Date.now()) return aviso('La fecha de reinicio debe ser futura (la que muestra claude.ai).', 'error');
   const { inicio } = cicloDesde(reinicio.toISOString());
   const medido = consumoEntre(inicio, Date.now());
-  if (medido <= 0) return aviso('No hay consumo medido en este ciclo todavía: espera a que los agentes reporten.', 'error');
-  const actual = ajustes.cuota || {};
+  if (medido < 1) return aviso('Hay muy poco consumo medido en este ciclo (' + usd(medido) + '): calibrar ahora daría un límite equivocado. Espera a que los agentes reporten más.', 'error');
+  const actual = ajustes.cuota?.reinicio ? ajustes.cuota : {};
   const limite = actual.limite || medido / (pct / 100);                 // la primera lectura define el límite
   const lectura = { fecha: new Date().toISOString(), pct, medidoPct: medido / limite * 100 };
   const nueva = { reinicio: reinicio.toISOString(), limite, lecturas: [...(actual.lecturas || []), lectura].slice(-20) };
@@ -1823,6 +1838,12 @@ async function registrarLectura(e) {
     $('#cqPct').value = '';
     aviso(actual.limite ? 'Lectura registrada: claude.ai ' + pct + '% · agentes ' + lectura.medidoPct.toFixed(1) + '%.' : 'Cuota calibrada: límite semanal ≈ ' + usd(limite) + ' equivalentes.');
   } catch (err) { aviso('No se pudo guardar: ' + err.message, 'error'); }
+}
+async function borrarCalibracion() {
+  const ok = await dialogo({ titulo: '¿Borrar la calibración manual?', texto: 'Se eliminan el límite y las lecturas manuales. La pestaña se llenará con la lectura automática de los agentes 2.3.0 o con una lectura manual nueva.', aceptar: 'Borrar' });
+  if (!ok) return;
+  try { await guardarAjuste('cuota', {}); aviso('Calibración borrada.'); }
+  catch (err) { aviso('No se pudo borrar: ' + err.message, 'error'); }
 }
 async function recalcularLimite() {
   const c = ajustes.cuota, ult = c?.lecturas?.at(-1); if (!ult) return;
