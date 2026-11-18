@@ -1,0 +1,5 @@
+{
+  "supabaseUrl": "https://TU-PROYECTO.supabase.co",
+  "supabaseKey": "PEGAR-AQUI-LA-ANON-O-PUBLISHABLE-KEY",
+  "diasRecalculo": 7
+}

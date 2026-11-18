@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Consumo Claude Code</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f6f5f2; --surface: #fcfcfb; --border: #e3e2dd; --grid: #ecebe7;
+  --text: #0b0b0b; --text-2: #52514e; --muted: #7a7974;
+  --accent: #2a78d6; --input-bg: #ffffff;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s-otros: #a8a7a1;
+  --good: #0ca30c; --warning: #b77900; --critical: #d03b3b;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #121211; --surface: #1a1a19; --border: #2e2e2c; --grid: #262624;
+    --text: #f0efec; --text-2: #c3c2b7; --muted: #8f8e88;
+    --accent: #3987e5; --input-bg: #222220;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s-otros: #5f5e5a;
+    --good: #0ca30c; --warning: #fab219; --critical: #e66767;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #121211; --surface: #1a1a19; --border: #2e2e2c; --grid: #262624;
+  --text: #f0efec; --text-2: #c3c2b7; --muted: #8f8e88;
+  --accent: #3987e5; --input-bg: #222220;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s-otros: #5f5e5a;
+  --good: #0ca30c; --warning: #fab219; --critical: #e66767;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif; }
+main { max-width: 1200px; margin: 0 auto; padding: 24px 16px 48px; }
+h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
+h2 { font-size: 15px; margin: 0 0 12px; }
+.sub { color: var(--text-2); margin: 2px 0 0; }
+.top { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; justify-content: space-between; margin-bottom: 20px; }
+.controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface); }
+.seg button { border: 0; background: none; padding: 6px 12px; color: var(--text-2); cursor: pointer; font: inherit; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.btn { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; padding: 6px 12px; cursor: pointer; font: inherit; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+.kpi .lbl { color: var(--text-2); font-size: 12px; }
+.kpi .val { font-size: 26px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.kpi .det { color: var(--muted); font-size: 12px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0 0 8px; color: var(--text-2); font-size: 12px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+#chart { position: relative; }
+#chart svg { display: block; width: 100%; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.12); min-width: 180px; display: none; z-index: 2; }
+.tip b { display: block; margin-bottom: 4px; }
+.tip div { display: flex; justify-content: space-between; gap: 12px; }
+.tip i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; margin-right: 6px; }
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+th { color: var(--text-2); font-weight: 500; font-size: 12px; }
+td.n, th.n { text-align: right; }
+.persona { background: var(--input-bg); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 4px 8px; font: inherit; width: 170px; }
+.persona.saved { border-color: var(--good); }
+.share { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+.share .bar { width: 80px; height: 6px; background: var(--grid); border-radius: 3px; overflow: hidden; }
+.share .bar i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+.small { color: var(--muted); font-size: 12px; }
+.st { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; }
+.st.ok { color: var(--good); } .st.warn { color: var(--warning); } .st.bad { color: var(--critical); }
+.login { max-width: 360px; margin: 10vh auto; }
+.login label { display: block; font-size: 12px; color: var(--text-2); margin: 12px 0 4px; }
+.login input { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--input-bg); color: var(--text); font: inherit; }
+.err { color: var(--critical); margin-top: 10px; min-height: 1em; }
+.note { color: var(--muted); font-size: 12px; margin-top: 8px; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <!-- ========= Login ========= -->
+  <section id="vLogin" class="card login" hidden>
+    <h1>Consumo Claude Code</h1>
+    <p class="sub">Ingresa con tu usuario del panel.</p>
+    <form id="fLogin">
+      <label for="email">Correo</label>
+      <input id="email" type="email" autocomplete="username" required>
+      <label for="pass">Contraseña</label>
+      <input id="pass" type="password" autocomplete="current-password" required>
+      <div class="err" id="loginErr"></div>
+      <button class="btn primary" style="margin-top:8px;width:100%">Ingresar</button>
+    </form>
+  </section>
+
+  <!-- ========= Dashboard ========= -->
+  <section id="vDash" hidden>
+    <div class="top">
+      <div>
+        <h1>Consumo de Claude Code por máquina</h1>
+        <p class="sub" id="subtitulo">Cuenta compartida del equipo</p>
+      </div>
+      <div class="controls">
+        <div class="seg" id="rango" role="group" aria-label="Rango">
+          <button data-d="7">7 días</button><button data-d="30" aria-pressed="true">30 días</button><button data-d="90">90 días</button><button data-d="0">Todo</button>
+        </div>
+        <button class="btn" id="bRefrescar">Actualizar</button>
+        <button class="btn" id="bSalir">Salir</button>
+      </div>
+    </div>
+
+    <div class="kpis" id="kpis"></div>
+
+    <div class="card">
+      <h2>Costo equivalente diario por persona (USD)</h2>
+      <div class="legend" id="legend"></div>
+      <div id="chart"><div class="tip" id="tip"></div></div>
+    </div>
+
+    <div class="card">
+      <h2>Ranking por máquina</h2>
+      <div class="tbl-wrap"><table id="tRanking"></table></div>
+      <p class="note">Escribe el nombre de la persona en cada máquina; se guarda al salir del campo. Máquinas con el mismo nombre se suman como una persona en el gráfico.</p>
+    </div>
+
+    <div class="card">
+      <h2>Por modelo</h2>
+      <div class="tbl-wrap"><table id="tModelos"></table></div>
+      <p class="note">El costo equivalente es lo que costaría ese consumo a precio de API (USD por millón de tokens, escritura de caché a 1,25× la entrada). Con suscripción no se cobra por token: sirve para comparar quién consume más de la cuota compartida.</p>
+    </div>
+  </section>
+</main>
+
+<script>
+// ===================== CONFIGURACIÓN =====================
+const SUPABASE_URL = 'https://TU-PROYECTO.supabase.co';
+const SUPABASE_KEY = 'PEGAR-AQUI-LA-ANON-O-PUBLISHABLE-KEY';
+// =========================================================
+
+// Precios USD por millón de tokens: [entrada, salida, lectura de caché]. Escritura de caché = 1,25 × entrada.
+const PRECIOS = {
+  'claude-fable-5-2': [8, 40, 0.20], 'claude-mythos-5-2': [8, 40, 0.20],
+  'claude-fable-5-1': [10, 50, 1.0], 'claude-mythos-5-1': [10, 50, 1.0],
+  'claude-fable-5': [10, 50, 1.0], 'claude-mythos-5': [10, 50, 1.0],
+  'claude-opus-5-5': [4, 20, 0.20], 'claude-opus-5': [5, 25, 0.50],
+  'claude-opus-4-8': [5, 25, 0.50], 'claude-opus-4-7': [5, 25, 0.50], 'claude-opus-4-6': [5, 25, 0.50], 'claude-opus-4-5': [5, 25, 0.50],
+  'claude-opus-4-1': [15, 75, 1.50], 'claude-opus-4': [15, 75, 1.50],
+  'claude-sonnet-5-5': [2, 10, 0.10], 'claude-sonnet-5': [2, 10, 0.20],
+  'claude-sonnet-4': [3, 15, 0.30], 'claude-3-7-sonnet': [3, 15, 0.30],
+  'claude-haiku-5-5': [0.10, 0.50, 0.01], 'claude-haiku-4-5': [1, 5, 0.10], 'claude-3-5-haiku': [0.8, 4, 0.08],
+};
+const FAMILIA = { fable: [10, 50, 1.0], mythos: [10, 50, 1.0], opus: [5, 25, 0.50], sonnet: [3, 15, 0.30], haiku: [1, 5, 0.10] };
+const CLAVES = Object.keys(PRECIOS).sort((a, b) => b.length - a.length);
+function precio(modelo) {
+  const k = CLAVES.find(k => modelo.startsWith(k));
+  if (k) return PRECIOS[k];
+  const f = Object.keys(FAMILIA).find(f => modelo.includes(f));
+  return f ? FAMILIA[f] : FAMILIA.opus;
+}
+function costo(r) {
+  const [pi, po, pcr] = precio(r.modelo);
+  return (r.input_tokens * pi + r.output_tokens * po + r.cache_creation_tokens * pi * 1.25 + r.cache_read_tokens * pcr) / 1e6;
+}
+
+// ---------- utilidades ----------
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const usd = v => v >= 1000 ? '$' + Math.round(v).toLocaleString('es-PE') : '$' + v.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const tok = v => v >= 1e9 ? (v / 1e9).toFixed(1) + ' B' : v >= 1e6 ? (v / 1e6).toFixed(1) + ' M' : v >= 1e3 ? (v / 1e3).toFixed(1) + ' k' : String(v);
+const pct = v => (v * 100).toFixed(1) + '%';
+const isoDia = d => d.toISOString().slice(0, 10);
+const store = {
+  get(k) { try { return JSON.parse(sessionStorage.getItem(k)); } catch { return null; } },
+  set(k, v) { try { sessionStorage.setItem(k, JSON.stringify(v)); } catch { /* sin storage */ } },
+  del(k) { try { sessionStorage.removeItem(k); } catch { /* sin storage */ } },
+};
+
+// ---------- autenticación ----------
+let sesion = store.get('ct_sesion');
+async function login(email, password) {
+  const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    method: 'POST', headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error_description || j.msg || 'Credenciales inválidas');
+  sesion = { access: j.access_token, refresh: j.refresh_token };
+  store.set('ct_sesion', sesion);
+}
+async function refrescar() {
+  const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+    method: 'POST', headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refresh_token: sesion?.refresh }),
+  });
+  if (!r.ok) throw new Error('Sesión expirada');
+  const j = await r.json();
+  sesion = { access: j.access_token, refresh: j.refresh_token };
+  store.set('ct_sesion', sesion);
+}
+async function api(path, opts = {}, reintento = true) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...opts, headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${sesion?.access}`, 'Content-Type': 'application/json', ...(opts.headers || {}) },
+  });
+  if (r.status === 401 && reintento) { await refrescar(); return api(path, opts, false); }
+  if (!r.ok) throw new Error(`Error ${r.status}: ${(await r.text()).slice(0, 200)}`);
+  return r;
+}
+async function todasLasFilas(path) {
+  const out = []; const PAG = 1000;
+  for (let desde = 0; ; desde += PAG) {
+    const r = await api(path, { headers: { Range: `${desde}-${desde + PAG - 1}`, 'Range-Unit': 'items' } });
+    const filas = await r.json();
+    out.push(...filas);
+    if (filas.length < PAG) return out;
+  }
+}
+
+// ---------- datos ----------
+let dias = 30, maquinas = [], consumo = [];
+async function cargar() {
+  $('#subtitulo').textContent = 'Cargando…';
+  const filtro = dias ? `&dia=gte.${isoDia(new Date(Date.now() - (dias - 1) * 864e5))}` : '';
+  [maquinas, consumo] = await Promise.all([
+    todasLasFilas('maquinas?select=*&order=machine_id'),
+    todasLasFilas(`consumo_diario?select=machine_id,dia,modelo,input_tokens,output_tokens,cache_creation_tokens,cache_read_tokens,mensajes${filtro}&order=dia,machine_id,modelo`),
+  ]);
+  for (const r of consumo) r.costo = costo(r);
+  $('#subtitulo').textContent = `Cuenta compartida del equipo · actualizado ${new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}`;
+  render();
+}
+const etiqueta = m => (m.persona && m.persona.trim()) || `${m.usuario_windows || '?'} @ ${m.hostname || '?'}`;
+
+// ---------- render ----------
+function render() {
+  const porMaq = new Map(maquinas.map(m => [m.machine_id, { m, costo: 0, output: 0, entrada: 0, mensajes: 0, modelos: new Map() }]));
+  const total = { costo: 0, tokens: 0 };
+  for (const r of consumo) {
+    const a = porMaq.get(r.machine_id); if (!a) continue;
+    a.costo += r.costo; a.output += r.output_tokens; a.mensajes += r.mensajes;
+    a.entrada += r.input_tokens + r.cache_creation_tokens + r.cache_read_tokens;
+    a.modelos.set(r.modelo, (a.modelos.get(r.modelo) || 0) + r.costo);
+    total.costo += r.costo; total.tokens += r.input_tokens + r.output_tokens + r.cache_creation_tokens + r.cache_read_tokens;
+  }
+  const ranking = [...porMaq.values()].sort((a, b) => b.costo - a.costo);
+
+  // personas (agrupa máquinas con el mismo nombre)
+  const porPersona = new Map();
+  for (const a of ranking) porPersona.set(etiqueta(a.m), (porPersona.get(etiqueta(a.m)) || 0) + a.costo);
+  const personas = [...porPersona.entries()].sort((a, b) => b[1] - a[1]).filter(p => p[1] > 0);
+
+  // KPIs
+  const activas = ranking.filter(a => a.costo > 0).length;
+  const top = personas[0];
+  $('#kpis').innerHTML = [
+    ['Costo equivalente', usd(total.costo), dias ? `últimos ${dias} días` : 'todo el historial'],
+    ['Tokens procesados', tok(total.tokens), 'entrada + salida + caché'],
+    ['Máquinas con consumo', `${activas} / ${maquinas.length}`, 'registradas en total'],
+    ['Mayor consumo', top ? esc(top[0]) : '—', top ? `${usd(top[1])} · ${pct(top[1] / (total.costo || 1))} del total` : ''],
+  ].map(([l, v, d]) => `<div class="kpi"><div class="lbl">${l}</div><div class="val" ${l === 'Mayor consumo' ? 'style="font-size:20px"' : ''}>${v}</div><div class="det">${d}</div></div>`).join('');
+
+  renderChart(personas.map(p => p[0]));
+  renderRanking(ranking, total.costo);
+  renderModelos();
+}
+
+function renderChart(personasOrden) {
+  const colores = ['--s1', '--s2', '--s3', '--s4', '--s5'];
+  const top5 = personasOrden.slice(0, 5);
+  const serie = p => top5.includes(p) ? p : 'Otros';
+  const series = [...top5, ...(personasOrden.length > 5 ? ['Otros'] : [])];
+  const color = s => `var(${s === 'Otros' ? '--s-otros' : colores[top5.indexOf(s)]})`;
+  const persMaq = new Map(maquinas.map(m => [m.machine_id, etiqueta(m)]));
+
+  // días del rango (incluye días sin consumo)
+  const hoy = new Date(); hoy.setHours(12);
+  let ini = dias ? new Date(hoy.getTime() - (dias - 1) * 864e5) : (consumo.length ? new Date(consumo[0].dia + 'T12:00:00') : hoy);
+  const listaDias = []; for (let d = new Date(ini); d <= hoy; d = new Date(d.getTime() + 864e5)) listaDias.push(isoDia(d));
+  const datos = new Map(listaDias.map(d => [d, Object.fromEntries(series.map(s => [s, 0]))]));
+  for (const r of consumo) { const d = datos.get(r.dia); if (d) { const s = serie(persMaq.get(r.machine_id)); if (s in d) d[s] += r.costo; } }
+
+  $('#legend').innerHTML = series.map(s => `<span><i style="background:${color(s)}"></i>${esc(s)}</span>`).join('');
+
+  const el = $('#chart'), W = Math.max(el.clientWidth, 300), H = 260, m = { t: 8, r: 8, b: 26, l: 56 };
+  const maxV = Math.max(0.01, ...[...datos.values()].map(d => series.reduce((s, k) => s + d[k], 0)));
+  const paso = nice(maxV / 4), yMax = Math.ceil(maxV / paso) * paso;
+  const y = v => m.t + (H - m.t - m.b) * (1 - v / yMax);
+  const bw = (W - m.l - m.r) / listaDias.length, barW = Math.max(2, Math.min(28, bw * 0.7));
+  let svg = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Costo equivalente diario por persona">`;
+  for (let v = 0; v <= yMax + 1e-9; v += paso) svg += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/><text x="${m.l - 8}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${usd(v)}</text>`;
+  const cadaN = Math.ceil(listaDias.length / Math.max(1, Math.floor((W - m.l) / 60)));
+  listaDias.forEach((d, i) => {
+    const x = m.l + i * bw + (bw - barW) / 2;
+    let acc = 0;
+    for (const s of series) {
+      const v = datos.get(d)[s]; if (v <= 0) continue;
+      const y1 = y(acc + v), y0 = y(acc);
+      svg += `<rect x="${x}" y="${y1}" width="${barW}" height="${Math.max(0, y0 - y1 - 1)}" fill="${color(s)}" rx="${barW > 6 ? 2 : 0}"/>`;
+      acc += v;
+    }
+    if (i % cadaN === 0) svg += `<text x="${x + barW / 2}" y="${H - 8}" text-anchor="middle" font-size="11" fill="var(--muted)">${d.slice(8)}/${d.slice(5, 7)}</text>`;
+    svg += `<rect class="hit" data-d="${d}" x="${m.l + i * bw}" y="${m.t}" width="${bw}" height="${H - m.t - m.b}" fill="transparent"/>`;
+  });
+  svg += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(0)}" y2="${y(0)}" stroke="var(--border)"/></svg>`;
+  el.querySelector('svg')?.remove();
+  el.insertAdjacentHTML('beforeend', svg);
+
+  const tip = $('#tip');
+  el.querySelectorAll('.hit').forEach(h => {
+    h.addEventListener('mousemove', ev => {
+      const d = h.dataset.d, v = datos.get(d), tot = series.reduce((s, k) => s + v[k], 0);
+      tip.innerHTML = `<b>${d.slice(8)}/${d.slice(5, 7)}/${d.slice(0, 4)}</b>` +
+        series.filter(s => v[s] > 0).map(s => `<div><span><i style="background:${color(s)}"></i>${esc(s)}</span><span>${usd(v[s])}</span></div>`).join('') +
+        `<div style="border-top:1px solid var(--grid);margin-top:4px;padding-top:4px"><span>Total</span><span>${usd(tot)}</span></div>`;
+      tip.style.display = 'block';
+      const rect = el.getBoundingClientRect();
+      let lx = ev.clientX - rect.left + 12; if (lx + tip.offsetWidth > rect.width) lx = ev.clientX - rect.left - tip.offsetWidth - 12;
+      tip.style.left = Math.max(0, lx) + 'px'; tip.style.top = Math.max(0, ev.clientY - rect.top - 20) + 'px';
+      h.setAttribute('fill', 'rgba(127,127,127,.08)');
+    });
+    h.addEventListener('mouseleave', () => { tip.style.display = 'none'; h.setAttribute('fill', 'transparent'); });
+  });
+}
+function nice(v) { const p = Math.pow(10, Math.floor(Math.log10(v))); const f = v / p; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p; }
+
+function estadoReporte(ts) {
+  if (!ts) return '<span class="st bad">✕ Nunca</span>';
+  const h = (Date.now() - new Date(ts).getTime()) / 36e5;
+  const txt = h < 1 ? 'hace minutos' : h < 48 ? `hace ${Math.round(h)} h` : `hace ${Math.round(h / 24)} días`;
+  if (h < 24) return `<span class="st ok">● ${txt}</span>`;
+  if (h < 72) return `<span class="st warn">▲ ${txt}</span>`;
+  return `<span class="st bad">✕ ${txt}</span>`;
+}
+
+function renderRanking(ranking, totalCosto) {
+  const maxC = ranking[0]?.costo || 1;
+  $('#tRanking').innerHTML = `<thead><tr><th>#</th><th>Persona</th><th>Equipo · usuario Windows</th><th class="n">Costo eq.</th><th class="n">% del total</th><th class="n">Salida</th><th class="n">Entrada + caché</th><th class="n">Mensajes</th><th>Modelo principal</th><th>Último reporte</th></tr></thead><tbody>` +
+    ranking.map((a, i) => {
+      const princ = [...a.modelos.entries()].sort((x, y) => y[1] - x[1])[0]?.[0] || '—';
+      return `<tr>
+        <td>${i + 1}</td>
+        <td><input class="persona" data-id="${esc(a.m.machine_id)}" value="${esc(a.m.persona || '')}" placeholder="Asignar nombre" aria-label="Persona de ${esc(a.m.hostname)}"></td>
+        <td>${esc(a.m.hostname)} · ${esc(a.m.usuario_windows)}<div class="small">${esc(a.m.machine_id.slice(0, 8))}</div></td>
+        <td class="n"><b>${usd(a.costo)}</b></td>
+        <td class="n"><div class="share">${pct(a.costo / (totalCosto || 1))}<span class="bar"><i style="width:${(a.costo / maxC * 100).toFixed(1)}%"></i></span></div></td>
+        <td class="n">${tok(a.output)}</td>
+        <td class="n">${tok(a.entrada)}</td>
+        <td class="n">${a.mensajes.toLocaleString('es-PE')}</td>
+        <td>${esc(princ)}</td>
+        <td>${estadoReporte(a.m.ultimo_reporte)}</td>
+      </tr>`;
+    }).join('') + '</tbody>';
+  document.querySelectorAll('.persona').forEach(inp => {
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur(); });
+    inp.addEventListener('change', async () => {
+      try {
+        await api(`maquinas?machine_id=eq.${encodeURIComponent(inp.dataset.id)}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ persona: inp.value.trim() || null }) });
+        const m = maquinas.find(x => x.machine_id === inp.dataset.id); if (m) m.persona = inp.value.trim() || null;
+        inp.classList.add('saved'); setTimeout(render, 600);
+      } catch (e) { alert('No se pudo guardar: ' + e.message); }
+    });
+  });
+}
+
+function renderModelos() {
+  const pm = new Map();
+  for (const r of consumo) {
+    const a = pm.get(r.modelo) || { costo: 0, out: 0, ent: 0, msg: 0 };
+    a.costo += r.costo; a.out += r.output_tokens; a.ent += r.input_tokens + r.cache_creation_tokens + r.cache_read_tokens; a.msg += r.mensajes;
+    pm.set(r.modelo, a);
+  }
+  $('#tModelos').innerHTML = `<thead><tr><th>Modelo</th><th class="n">Costo eq.</th><th class="n">Salida</th><th class="n">Entrada + caché</th><th class="n">Mensajes</th></tr></thead><tbody>` +
+    [...pm.entries()].sort((a, b) => b[1].costo - a[1].costo).map(([mo, a]) =>
+      `<tr><td>${esc(mo)}</td><td class="n">${usd(a.costo)}</td><td class="n">${tok(a.out)}</td><td class="n">${tok(a.ent)}</td><td class="n">${a.msg.toLocaleString('es-PE')}</td></tr>`).join('') + '</tbody>';
+}
+
+// ---------- arranque ----------
+function mostrar(vista) { $('#vLogin').hidden = vista !== 'login'; $('#vDash').hidden = vista !== 'dash'; }
+function demo() {
+  // Datos sintéticos para previsualizar (abrir dashboard.html#demo).
+  const nombres = ['Ana Torres', 'Luis Rojas', null, 'Carla Díaz', 'Pedro Vega', 'Rosa Medina', null];
+  maquinas = nombres.map((p, i) => ({ machine_id: 'demo' + String(i).padStart(20, '0'), hostname: `VM-LDS-${101 + i}`, usuario_windows: `analista${i + 1}_dw`, persona: p, ultimo_reporte: new Date(Date.now() - [0.3, 2, 30, 0.5, 80, 1, 5][i] * 36e5).toISOString() }));
+  consumo = [];
+  const mods = ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5'];
+  for (let d = 0; d < 30; d++) maquinas.forEach((m, i) => mods.forEach((mo, j) => {
+    const f = [6, 3, 0.4, 2, 1, 1.5, 0.6][i] * [1, 0.6, 0.3][j] * (0.5 + ((d * 7 + i * 3 + j) % 10) / 10);
+    if ((d + i) % 6 === 0) return;
+    consumo.push({ machine_id: m.machine_id, dia: isoDia(new Date(Date.now() - (29 - d) * 864e5)), modelo: mo, input_tokens: Math.round(f * 2e4), output_tokens: Math.round(f * 4e4), cache_creation_tokens: Math.round(f * 3e5), cache_read_tokens: Math.round(f * 4e6), mensajes: Math.round(f * 40) });
+  }));
+  if (dias) { const desde = isoDia(new Date(Date.now() - (dias - 1) * 864e5)); consumo = consumo.filter(r => r.dia >= desde); }
+  for (const r of consumo) r.costo = costo(r);
+  mostrar('dash'); $('#subtitulo').textContent = 'MODO DEMO · datos sintéticos'; render();
+}
+async function iniciar() {
+  if (location.hash === '#demo') return demo();
+  if (SUPABASE_URL.includes('TU-PROYECTO')) { mostrar('login'); $('#loginErr').textContent = 'Falta configurar SUPABASE_URL y SUPABASE_KEY en este archivo.'; return; }
+  if (!sesion) return mostrar('login');
+  mostrar('dash');
+  try { await cargar(); } catch (e) { store.del('ct_sesion'); sesion = null; mostrar('login'); $('#loginErr').textContent = e.message; }
+}
+$('#fLogin').addEventListener('submit', async e => {
+  e.preventDefault(); $('#loginErr').textContent = '';
+  try { await login($('#email').value, $('#pass').value); await iniciar(); } catch (err) { $('#loginErr').textContent = err.message; }
+});
+$('#rango').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  document.querySelectorAll('#rango button').forEach(x => x.setAttribute('aria-pressed', x === b));
+  dias = +b.dataset.d;
+  if (location.hash === '#demo') return demo();
+  cargar().catch(err => alert(err.message));
+});
+$('#bRefrescar').addEventListener('click', () => cargar().catch(err => alert(err.message)));
+$('#bSalir').addEventListener('click', () => { store.del('ct_sesion'); sesion = null; mostrar('login'); });
+let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => consumo.length && render(), 150); });
+setInterval(() => { if (sesion && !$('#vDash').hidden) cargar().catch(() => {}); }, 5 * 60 * 1000);
+iniciar();
+</script>
+</body>
+</html>
