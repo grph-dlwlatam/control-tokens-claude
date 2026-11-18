@@ -468,7 +468,13 @@ dialog#dlg.peligro { border-top-color: var(--critical); }
 .tb-lider small:first-child { font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
 .tb-lider b { display: block; font-size: 15px; }
 .tb-lider.vacio small { text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--muted); }
-.tb-kpis { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.tb-kpis { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap: 8px; }
+.tb-c .tb-cq { display: block; white-space: nowrap; }
+.tb-c .tb-cq b { display: inline; font-size: 12px; }
+.tb-cuenta { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px 18px; justify-content: space-between; padding: 9px 14px; margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); font-size: 13px; color: var(--text-2); }
+.tb-cuenta b { color: var(--text); }
+.tb-cuenta .rojo, .tb-cuenta .rojo b { color: var(--critical); }
+.tb-cuenta .ok { color: var(--good, #4f7a0e); }
 .tb-kpis div { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; }
 .tb-kpis small { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--text-2); }
 .tb-kpis b { font-size: 18px; }
@@ -500,6 +506,7 @@ dialog#dlg.peligro { border-top-color: var(--critical); }
   .tb-cab { grid-template-columns: 1fr; }
   .tb-lider { justify-self: start; }
   .tb-kpis b { font-size: 16px; }
+  .tb-kpis { grid-template-columns: repeat(2, 1fr); }
   .tb-fila { grid-template-columns: 38px 1fr auto; padding: 10px 6px; }
   .tb-pos { display: none; }
   .tb-acc { grid-column: 1 / -1; }
@@ -1257,12 +1264,16 @@ function renderEquipo(equipo, totalCosto) {
   const sinEq = equipo.filter(g => !g.mb.equipo_id || !equipos.some(e => e.id === g.mb.equipo_id));
   if (sinEq.length || !equipos.length) grupos.push({ eq: null, col: 'var(--s-otros)', gs: sinEq });
   const visibles = filtroEquipo ? grupos.filter(x => x.gs.length || (x.eq && x.eq.id === filtroEquipo)) : grupos;
+  // Contraste con la cuenta: % del límite semanal que consumió cada uno en el ciclo vigente.
+  const cq = calcularCuota(), conCuota = cq && cq.limite && !cq.calibInvalida && !cq.sinLimite;
+  const ciclo = conCuota ? consumoCicloPorMiembro(cq) : null;
+  const pctCuota = id => (ciclo.get(id) || 0) / cq.limite * 100;
   const fila = (g, i, maxG) => '<div class="tb-fila" data-ficha="' + esc(g.mb.id) + '" role="button" tabindex="0" title="Ver ficha de ' + esc(g.mb.nombre) + '">' +
     '<span class="tb-pos">' + (i + 1) + '</span>' +
     '<div class="mi-av">' + esc(iniciales(g.mb.nombre)) + '</div>' +
     '<div class="tb-n"><b>' + esc(g.mb.nombre) + '</b><small>' + (g.maquinas.length ? g.maquinas.map(m => esc(m.hostname)).join(', ') + ' · ' + estadoReporte(g.ultimo) : 'sin máquinas') + '</small>' +
     '<div class="mi-bar"><i style="width:' + (g.costo / maxG * 100).toFixed(1) + '%;background:var(--c)"></i></div></div>' +
-    '<div class="tb-c"><b>' + usd(g.costo) + '</b><small>' + pct(g.costo / (totalCosto || 1)) + (g.nPersonal ? ' · <span class="st bad">personal ' + usd(g.personal) + '</span>' : '') + '</small></div>' +
+    '<div class="tb-c"><b>' + usd(g.costo) + '</b><small>' + pct(g.costo / (totalCosto || 1)) + (conCuota ? '<span class="tb-cq">cuota sem. <b>' + pctCuota(g.mb.id).toFixed(1) + '%</b></span>' : '') + (g.nPersonal ? ' · <span class="st bad">personal ' + usd(g.personal) + '</span>' : '') + '</small></div>' +
     '<div class="tb-acc"><select class="asignarEq" data-mb="' + esc(g.mb.id) + '" aria-label="Equipo de ' + esc(g.mb.nombre) + '">' + opcEquipo(g.mb.equipo_id) + '</select>' +
     '<button class="tb-x" data-borrar="' + esc(g.mb.id) + '" title="Eliminar miembro" aria-label="Eliminar a ' + esc(g.mb.nombre) + '">✕</button></div></div>';
   $('#tableros').innerHTML = visibles.map(({ eq, col, gs }) => {
@@ -1272,10 +1283,12 @@ function renderEquipo(equipo, totalCosto) {
       : (eq ? '<div class="tb-lider vacio"><small>Sin líder asignado · edítalo en Ajustes</small></div>' : '<div class="tb-lider vacio"><small>Asígnales un equipo con el selector</small></div>');
     return '<section class="tablero' + (eq ? '' : ' sin') + '" style="--c:' + col + '">' +
       '<header class="tb-cab"><div class="tb-tit"><span class="tb-dot"></span><h3>' + (eq ? 'Equipo ' + esc(eq.nombre) : 'Sin equipo') + '</h3><span class="chip">' + gs.length + ' miembro(s)</span></div>' + lider +
-      '<div class="tb-kpis"><div><small>Costo eq.</small><b>' + usd(costo) + '</b></div><div><small>% del total</small><b>' + pct(costo / (totalCosto || 1)) + '</b></div><div><small>Uso personal</small><b' + (pers ? ' class="rojo"' : '') + '>' + usd(pers) + '</b></div></div>' +
+      '<div class="tb-kpis"><div><small>Costo eq.</small><b>' + usd(costo) + '</b></div><div><small>% del total</small><b>' + pct(costo / (totalCosto || 1)) + '</b></div>' + (conCuota ? '<div title="% del límite semanal de la cuenta consumido por este equipo en el ciclo vigente"><small>Cuota sem.</small><b>' + gs.reduce((x, g) => x + pctCuota(g.mb.id), 0).toFixed(1) + '%</b></div>' : '') + '<div><small>Uso personal</small><b' + (pers ? ' class="rojo"' : '') + '>' + usd(pers) + '</b></div></div>' +
       '<div class="tb-barra"><i style="width:' + (costo / (totalCosto || 1) * 100).toFixed(1) + '%"></i></div></header>' +
       '<div class="tb-lista">' + (gs.length ? gs.map((g, i) => fila(g, i, maxG)).join('') : '<p class="lm-vacio">Este equipo aún no tiene miembros.</p>') + '</div></section>';
   }).join('') || '<p class="lm-vacio">Aún no hay miembros. Agrégalos abajo.</p>';
+  if (conCuota) $('#tableros').insertAdjacentHTML('afterbegin', '<div class="tb-cuenta"><span>Cuenta compartida esta semana: <b>' + Math.round(cq.pct * 100) + '%</b> del límite' + (cq.auto ? ' · lectura automática' : '') + '</span>' +
+    (cq.noMedido >= 0.5 ? '<span class="rojo">Sin agente / otras sesiones: <b>' + cq.noMedido.toFixed(1) + '%</b> (chat de claude.ai o máquinas sin GestorTokens)</span>' : '<span class="ok">✓ Todo el uso de la cuenta está medido por agentes</span>') + '</div>');
   document.querySelectorAll('[data-borrar]').forEach(b => b.addEventListener('click', async e => {
     e.stopPropagation();
     const mb = miembros.find(x => x.id === b.dataset.borrar);
