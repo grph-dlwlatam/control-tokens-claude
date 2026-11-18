@@ -425,6 +425,35 @@ dialog#dlg.peligro { border-top-color: var(--critical); }
   .avisos { bottom: calc(76px + env(safe-area-inset-bottom)); }
 }
 
+/* Equipos */
+.feq-wrap { margin-left: auto; display: flex; align-items: center; gap: 8px; padding: 6px 0; }
+.feq-l { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-2); }
+.feq button { padding: 5px 12px; font-size: 13.5px; }
+.feq-movil { display: none; }
+.eq-activo { color: #c8f07f; font-weight: 600; }
+.kpi-eq .eq-barra { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--grid); margin: 8px 0 6px; gap: 2px; }
+.kpi-eq .eq-barra i { display: block; height: 100%; }
+.kpi-eq .eq-lin { display: grid; gap: 1px; font-size: 12.5px; color: var(--text-2); }
+.kpi-eq .eq-lin span { display: flex; align-items: center; gap: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kpi-eq .eq-lin i { width: 8px; height: 8px; border-radius: 2px; flex: 0 0 8px; }
+.kpi-eq .eq-lin em { font-style: normal; color: var(--muted); }
+.kpi-eq .eq-lin b { color: var(--text); margin-left: auto; }
+.asignarEq { padding: 5px 8px; max-width: 170px; }
+.chip-eq { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: var(--grid); color: var(--text); letter-spacing: .03em; }
+.ficha-eq { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--text-2); }
+.ficha-eq select { text-transform: none; letter-spacing: 0; font-weight: 500; }
+.eq-fila { display: grid; grid-template-columns: 1fr 1fr 1.4fr auto auto auto; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--grid); }
+.eq-fila input { background: var(--input-bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font: inherit; min-width: 0; }
+#mEquipo { flex: 0 1 200px; }
+@media (max-width: 760px) {
+  #filtroEqTabs { display: none; }
+  .feq-movil:not(:empty) { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; overflow-x: auto; }
+  .feq-movil .feq { flex: 1; display: flex; }
+  .feq-movil .feq button { flex: 1; padding: 8px 6px; white-space: nowrap; }
+  .eq-fila { grid-template-columns: 1fr 1fr; }
+  .eq-fila .eqC { grid-column: 1 / -1; }
+}
+
 /* Paginación */
 .pager { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
 .pager:empty { display: none; }
@@ -520,7 +549,7 @@ tbody.animar tr { animation: rowin .45s ease both; }
         <span class="sep"></span>
         <div>
           <h1>Gestor de Tokens <span class="pill sm"><code>&gt;_</code> Claude Code · Anthropic</span></h1>
-          <p><span class="live" title="Se actualiza cada 5 minutos"></span><span id="subtitulo">Cuenta compartida del equipo</span></p>
+          <p><span class="live" title="Se actualiza cada 5 minutos"></span><span id="subtitulo">Cuenta compartida del equipo</span><span class="eq-activo" id="eqActivo"></span></p>
         </div>
       </div>
       <div class="controls">
@@ -540,10 +569,12 @@ tbody.animar tr { animation: rowin .45s ease both; }
       <button role="tab" data-tab="maquinas" aria-selected="false"><i class="ti" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></i>Máquinas <span class="badge" id="bMaquinas"></span></button>
       <button role="tab" data-tab="sesiones" aria-selected="false"><i class="ti" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg></i>Sesiones <span class="badge" id="bSesiones"></span></button>
       <button role="tab" data-tab="ajustes" aria-selected="false"><i class="ti" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></i>Ajustes</button>
+      <div class="feq-wrap" id="filtroEqTabs"></div>
     </div>
   </nav>
 
   <main>
+    <div class="feq-movil" id="filtroEqMovil"></div>
     <!-- ===== Resumen ===== -->
     <div class="panel" data-panel="resumen" role="tabpanel">
       <div class="kpis" id="kpis"></div>
@@ -581,6 +612,7 @@ tbody.animar tr { animation: rowin .45s ease both; }
         <form class="fila-form" id="fMiembro">
           <input id="mNombre" placeholder="Nombre del miembro" required aria-label="Nombre del miembro">
           <input id="mCorreo" type="email" placeholder="correo@dlwlatam.com (opcional)" aria-label="Correo del miembro">
+          <select id="mEquipo" aria-label="Equipo del miembro"></select>
           <button class="btn-s primary">Agregar miembro</button>
         </form>
         <p class="note">Cada miembro puede tener varias máquinas; se asignan en la pestaña Máquinas. Haz clic en un nombre para ver su ficha.</p>
@@ -630,6 +662,17 @@ tbody.animar tr { animation: rowin .45s ease both; }
           <h2>Carpetas de trabajo conocidas</h2>
           <p class="lbl-a">Las sesiones en estas carpetas (y subcarpetas) no levantan banderas de carpeta ni de horario. Se agregan desde la pestaña Sesiones con «marcar carpeta como de trabajo».</p>
           <div id="aCarpetas"></div>
+        </div>
+        <div class="card anim">
+          <h2>Equipos y líderes</h2>
+          <div id="aEquipos"></div>
+          <form class="fila-form" id="fEquipo">
+            <input id="eqNombre" placeholder="Equipo (p. ej. QA)" required aria-label="Nombre del equipo">
+            <input id="eqLider" placeholder="Líder" aria-label="Líder del equipo">
+            <input id="eqCorreo" type="email" placeholder="Correo del líder" aria-label="Correo del líder">
+            <button class="btn-s primary">Agregar equipo</button>
+          </form>
+          <p class="note">Si el correo del líder coincide con su usuario del panel, el panel se abre filtrado en su equipo (puede cambiarlo).</p>
         </div>
       </div>
     </div>
@@ -742,6 +785,8 @@ const AJUSTES_DEF = {
   carpetas_trabajo: [],
 };
 let dias = 30, maquinas = [], consumo = [], miembros = [], sesiones = [], animar = true;
+// base = datos completos; las variables de arriba son la vista filtrada por equipo.
+let base = null, equipos = [], filtroEquipo = store.get('ct_eq') ?? null;
 let ajustes = structuredClone(AJUSTES_DEF), faltan = new Set();
 let filtroSes = 'banderas', filtroMiembro = '', busqueda = '';
 
@@ -753,16 +798,19 @@ async function cargar() {
   const desde = dias ? isoDia(new Date(Date.now() - (dias - 1) * 864e5)) : '';
   faltan = new Set();
   let filasAjustes;
-  [maquinas, consumo, miembros, sesiones, filasAjustes] = await Promise.all([
+  [maquinas, consumo, miembros, sesiones, filasAjustes, equipos] = await Promise.all([
     todasLasFilas('maquinas?select=*&order=machine_id'),
     todasLasFilas(`consumo_diario?select=machine_id,dia,modelo,input_tokens,output_tokens,cache_creation_tokens,cache_read_tokens,mensajes${desde ? '&dia=gte.' + desde : ''}&order=dia,machine_id,modelo`),
     opcional('miembros?select=*&order=nombre', '02-sesiones.sql'),
     opcional(`sesiones?select=machine_id,session_id,inicio,fin,titulo,carpeta,entrypoint,por_modelo,mensajes,mensajes_subagente,revision,revisado_por${desde ? '&inicio=gte.' + desde : ''}&order=inicio.desc`, '02-sesiones.sql'),
     opcional('ajustes?select=clave,valor', '03-ajustes.sql'),
+    opcional('equipos?select=*&order=nombre', '04-equipos.sql'),
   ]);
   ajustes = structuredClone(AJUSTES_DEF);
   for (const f of filasAjustes) if (f.clave in ajustes && Array.isArray(f.valor)) ajustes[f.clave] = f.valor;
   prepararDatos();
+  base = { maquinas, consumo, miembros, sesiones };
+  equipoPorDefecto();
   $('#subtitulo').textContent = `Cuenta compartida del equipo · actualizado ${new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}`;
   animar = true; render();
 }
@@ -774,11 +822,12 @@ function prepararDatos() {
   recalcularBanderas();
 }
 function recalcularBanderas() {
-  const costos = sesiones.map(s => s.costo).sort((a, b) => a - b);
+  const todas = base ? base.sesiones : sesiones;
+  const costos = todas.map(s => s.costo).sort((a, b) => a - b);
   const mediana = costos.length ? costos[Math.floor(costos.length / 2)] : 0;
   const palabras = ajustes.palabras_personales.map(normalizar).filter(Boolean)
     .map(p => [p, new RegExp(`(^|[^a-z0-9])${p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^a-z0-9]|$)`)]);
-  for (const s of sesiones) s.banderas = banderas(s, mediana, palabras);
+  for (const s of todas) s.banderas = banderas(s, mediana, palabras);
 }
 
 const miembroDe = m => m && m.miembro_id ? miembros.find(x => x.id === m.miembro_id) : null;
@@ -817,6 +866,7 @@ async function guardarAjuste(clave, valor) {
 
 // ---------- render ----------
 function render() {
+  aplicarEquipo();
   const porMaq = new Map(maquinas.map(m => [m.machine_id, { m, costo: 0, output: 0, entrada: 0, mensajes: 0, modelos: new Map() }]));
   const total = { costo: 0, tokens: 0 };
   for (const r of consumo) {
@@ -855,11 +905,14 @@ function render() {
     ['Uso personal marcado', personalTotal, usd, `${nPersonal} sesión(es) · ${pct(personalTotal / (total.costo || 1))} del total`],
     ['Mayor consumo', null, null, top ? `${usd(top.costo)} · ${pct(top.costo / (total.costo || 1))} del total` : ''],
   ];
+  // Sin filtro y con equipos definidos, la 5.ª cifra muestra el reparto QA / Dev / ...
+  if (!filtroEquipo && equipos.length) kpis[4] = ['Consumo por equipo', null, null, '', htmlPorEquipo(equipo, total.costo)];
   const kEl = $('#kpis');
   kEl.classList.toggle('animar', animar);
-  kEl.innerHTML = kpis.map(([l, v, f, d], i) => `<div class="kpi" style="animation-delay:${i * 80}ms"><div class="lbl">${l}</div><div class="val${f ? '' : ' txt'}">${f ? f(animar ? 0 : v) : (top ? esc(top.mb.nombre) : '—')}</div><div class="det">${d}</div></div>`).join('');
+  kEl.innerHTML = kpis.map(([l, v, f, d, html], i) => html ? `<div class="kpi kpi-eq" style="animation-delay:${i * 80}ms">${html}</div>` : `<div class="kpi" style="animation-delay:${i * 80}ms"><div class="lbl">${l}</div><div class="val${f ? '' : ' txt'}">${f ? f(animar ? 0 : v) : (top ? esc(top.mb.nombre) : '—')}</div><div class="det">${d}</div></div>`).join('');
   if (animar) kEl.querySelectorAll('.val').forEach((el, i) => { if (kpis[i][2]) contar(el, kpis[i][1], kpis[i][2]); });
 
+  renderFiltroEq();
   renderAlertas(total.costo, mapeado, sinAsignar, equipo);
   const orden = [...equipo.filter(g => g.costo > 0).map(g => g.mb.nombre), ...(sinAsignar.some(a => a.costo > 0) ? ['Sin asignar'] : [])];
   renderChart(orden);
@@ -931,7 +984,7 @@ function renderChart(personasOrden) {
 
   $('#legend').innerHTML = series.map(s => `<span><i style="background:${color(s)}"></i>${esc(s)}</span>`).join('');
 
-  const el = $('#chart'), W = Math.max(el.clientWidth, 300), H = innerWidth <= 760 ? 220 : Math.round(Math.max(130, Math.min(300, innerHeight - 712))), m = { t: 8, r: 8, b: 26, l: 56 };
+  const el = $('#chart'), W = Math.max(el.clientWidth, 300), H = innerWidth <= 760 ? 220 : Math.round(Math.max(130, Math.min(300, innerHeight - 736))), m = { t: 8, r: 8, b: 26, l: 56 };
   const maxV = Math.max(0.01, ...[...datos.values()].map(d => series.reduce((s, k) => s + d[k], 0)));
   const paso = nice(maxV / 4), yMax = Math.ceil(maxV / paso) * paso;
   const y = v => m.t + (H - m.t - m.b) * (1 - v / yMax);
@@ -987,17 +1040,18 @@ function estadoReporte(ts) {
 function renderEquipo(equipo, totalCosto) {
   const maxC = equipo[0]?.costo || 1;
   const { ini, vis: pagEq } = paginar('equipo', equipo, '#pgEquipo');
-  $('#tEquipo').innerHTML = `<thead><tr><th>#</th><th>Miembro</th><th>Máquinas</th><th class="n">Costo eq.</th><th class="n">% del total</th><th class="n">Uso personal</th><th>Último reporte</th><th></th></tr></thead><tbody class="${animar ? 'animar' : ''}">` +
+  $('#tEquipo').innerHTML = `<thead><tr><th>#</th><th>Miembro</th><th>Equipo</th><th>Máquinas</th><th class="n">Costo eq.</th><th class="n">% del total</th><th class="n">Uso personal</th><th>Último reporte</th><th></th></tr></thead><tbody class="${animar ? 'animar' : ''}">` +
     (pagEq.length ? pagEq.map((g, i) => `<tr style="animation-delay:${Math.min(i, 12) * 45}ms">
         <td><span class="pos">${ini + i + 1}</span></td>
         <td><button class="link-m" data-ficha="${esc(g.mb.id)}" title="Ver ficha de ${esc(g.mb.nombre)}">${esc(g.mb.nombre)}</button>${g.mb.correo ? `<div class="small">${esc(g.mb.correo)}</div>` : ''}</td>
+        <td><select class="asignarEq" data-mb="${esc(g.mb.id)}" aria-label="Equipo de ${esc(g.mb.nombre)}">${opcEquipo(g.mb.equipo_id)}</select></td>
         <td>${g.maquinas.map(m => `<span class="chip">${esc(m.hostname)}</span>`).join('') || '<span class="small">ninguna</span>'}</td>
         <td class="n"><b>${usd(g.costo)}</b></td>
         <td class="n"><div class="share">${pct(g.costo / (totalCosto || 1))}<span class="bar"><i style="width:${(g.costo / maxC * 100).toFixed(1)}%"></i></span></div></td>
         <td class="n">${g.nPersonal ? `<span class="st bad">${usd(g.personal)} · ${g.nPersonal}</span>` : '<span class="small">—</span>'}</td>
         <td>${g.maquinas.length ? estadoReporte(g.ultimo) : '<span class="small">—</span>'}</td>
         <td><button class="btn-s" data-borrar="${esc(g.mb.id)}" title="Eliminar miembro" aria-label="Eliminar a ${esc(g.mb.nombre)}">Eliminar</button></td>
-      </tr>`).join('') : '<tr><td colspan="8" class="small">Aún no hay miembros. Agrégalos abajo y luego asígnales sus máquinas.</td></tr>') + '</tbody>';
+      </tr>`).join('') : '<tr><td colspan="9" class="small">Aún no hay miembros. Agrégalos abajo y luego asígnales sus máquinas.</td></tr>') + '</tbody>';
   $('#lmEquipo').innerHTML = pagEq.length ? pagEq.map(g => itemMiembro(g, totalCosto, maxC, true)).join('') : vacioLista('Aún no hay miembros. Agrégalos abajo y luego asígnales sus máquinas.');
   document.querySelectorAll('[data-borrar]').forEach(b => b.addEventListener('click', async e => {
     e.stopPropagation();
@@ -1006,20 +1060,26 @@ function renderEquipo(equipo, totalCosto) {
     const ok = await dialogo({ titulo: `¿Eliminar a ${mb.nombre}?`, texto: nMaq ? `Sus ${nMaq} máquina(s) quedarán sin asignar y aparecerán en la alerta de cuadre. Sus sesiones y consumo no se borran.` : 'No tiene máquinas asignadas. Sus datos de consumo no se ven afectados.', aceptar: 'Eliminar miembro', peligro: true });
     if (!ok) return;
     try {
-      if (esDemo()) { miembros = miembros.filter(x => x.id !== mb.id); maquinas.forEach(m => { if (m.miembro_id === mb.id) m.miembro_id = null; }); render(); }
+      if (esDemo()) { base.miembros = base.miembros.filter(x => x.id !== mb.id); base.maquinas.forEach(m => { if (m.miembro_id === mb.id) m.miembro_id = null; }); render(); }
       else { await api(`miembros?id=eq.${encodeURIComponent(mb.id)}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); await cargar(); }
       aviso(`${mb.nombre} fue eliminado del equipo.`);
     } catch (e) { aviso('No se pudo eliminar: ' + e.message, 'error'); }
   }));
   document.querySelectorAll('[data-ficha]').forEach(b => b.addEventListener('click', () => abrirFicha(b.dataset.ficha)));
+  enlazarAsignarEq('#tEquipo');
+  $('#mEquipo').innerHTML = opcEquipo(filtroEquipo && filtroEquipo !== '__sin' ? filtroEquipo : null);
+  $('#mEquipo').hidden = !equipos.length;
 }
 
 // Crea un miembro y devuelve su id.
-async function crearMiembro(nombre, correo = null) {
-  if (esDemo()) { const mb = { id: 'm' + Date.now(), nombre, correo, activo: true }; miembros.push(mb); return mb.id; }
-  const r = await api('miembros', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ nombre, correo }) });
-  const [mb] = await r.json();
-  miembros.push(mb);
+async function crearMiembro(nombre, correo = null, equipoId = (filtroEquipo && filtroEquipo !== '__sin' ? filtroEquipo : null)) {
+  let mb;
+  if (esDemo()) mb = { id: 'm' + Date.now(), nombre, correo, activo: true, equipo_id: equipoId };
+  else {
+    const r = await api('miembros', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ nombre, correo, equipo_id: equipoId }) });
+    [mb] = await r.json();
+  }
+  (base ? base.miembros : miembros).push(mb);
   return mb.id;
 }
 
@@ -1181,12 +1241,115 @@ function aviso(texto, tipo = 'ok', accion = null) {
   programar();
 }
 
+// ---------- equipos ----------
+const nombreEquipo = id => equipos.find(e => e.id === id)?.nombre || '';
+const opcEquipo = id => '<option value="">— Sin equipo —</option>' + equipos.map(e => '<option value="' + esc(e.id) + '"' + (e.id === id ? ' selected' : '') + '>' + esc(e.nombre) + (e.lider ? ' · ' + esc(e.lider) : '') + '</option>').join('');
+const COL_EQ = ['--s1', '--s2', '--s3', '--s4', '--s5'];
+
+// Aplica el filtro de equipo sobre los datos completos.
+function aplicarEquipo() {
+  if (!base) return;
+  if (filtroEquipo && filtroEquipo !== '__sin' && !equipos.some(e => e.id === filtroEquipo)) filtroEquipo = null;
+  miembros = !filtroEquipo ? base.miembros : base.miembros.filter(m => filtroEquipo === '__sin' ? !m.equipo_id : m.equipo_id === filtroEquipo);
+  if (!filtroEquipo) { maquinas = base.maquinas; consumo = base.consumo; sesiones = base.sesiones; }
+  else {
+    const ids = new Set(miembros.map(m => m.id));
+    maquinas = base.maquinas.filter(m => ids.has(m.miembro_id));
+    const mids = new Set(maquinas.map(m => m.machine_id));
+    consumo = base.consumo.filter(r => mids.has(r.machine_id));
+    sesiones = base.sesiones.filter(x => mids.has(x.machine_id));
+  }
+  const eq = equipos.find(e => e.id === filtroEquipo);
+  $('#eqActivo').textContent = eq ? ' · Equipo ' + eq.nombre + (eq.lider ? ' · líder ' + eq.lider : '') : (filtroEquipo === '__sin' ? ' · Miembros sin equipo' : '');
+}
+
+// Si quien entra es líder de un equipo, el panel abre filtrado en su equipo (solo la primera vez).
+function equipoPorDefecto() {
+  if (store.get('ct_eq') !== null) return;
+  const correo = (correoSesion() || '').toLowerCase();
+  const eq = equipos.find(e => (e.lider_correo || '').toLowerCase() === correo && correo);
+  if (eq) { filtroEquipo = eq.id; store.set('ct_eq', eq.id); }
+}
+
+function renderFiltroEq() {
+  if (!equipos.length) { $('#filtroEqTabs').innerHTML = $('#filtroEqMovil').innerHTML = ''; return; }
+  const opts = [['', 'Todos', ''], ...equipos.map(e => [e.id, e.nombre, e.lider ? 'Líder: ' + e.lider : ''])];
+  if (base && base.miembros.some(m => !m.equipo_id)) opts.push(['__sin', 'Sin equipo', 'Miembros sin equipo asignado']);
+  const html = '<span class="feq-l">Equipo</span><div class="seg seg-claro feq" role="group" aria-label="Filtrar por equipo">' +
+    opts.map(([v, t, tt]) => '<button data-eq="' + esc(v) + '" aria-pressed="' + ((filtroEquipo || '') === v) + '"' + (tt ? ' title="' + esc(tt) + '"' : '') + '>' + esc(t) + '</button>').join('') + '</div>';
+  $('#filtroEqTabs').innerHTML = html;
+  $('#filtroEqMovil').innerHTML = html;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-eq]'); if (!b) return;
+  filtroEquipo = b.dataset.eq || null;
+  store.set('ct_eq', filtroEquipo || '');
+  Object.keys(pagina).forEach(k => { pagina[k] = 1; });
+  filtroMiembro = '';
+  animar = true; render();
+});
+
+function htmlPorEquipo(equipo, totalCosto) {
+  const filas = equipos.map((e, i) => ({ n: e.nombre, l: e.lider, c: equipo.filter(g => g.mb.equipo_id === e.id).reduce((x, g) => x + g.costo, 0), col: 'var(' + COL_EQ[i % COL_EQ.length] + ')' }));
+  const resto = Math.max(0, totalCosto - filas.reduce((x, r) => x + r.c, 0));
+  if (resto > 0.005) filas.push({ n: 'Sin asignar', l: '', c: resto, col: 'var(--s-otros)' });
+  const t = totalCosto || 1;
+  return '<div class="lbl">Consumo por equipo</div>' +
+    '<div class="eq-barra">' + filas.filter(r => r.c > 0).map(r => '<i style="width:' + (r.c / t * 100).toFixed(1) + '%;background:' + r.col + '" title="' + esc(r.n) + ': ' + usd(r.c) + '"></i>').join('') + '</div>' +
+    '<div class="eq-lin">' + filas.map(r => '<span><i style="background:' + r.col + '"></i>' + esc(r.n) + (r.l ? ' <em>' + esc(r.l) + '</em>' : '') + ' <b>' + usd(r.c) + '</b> ' + pct(r.c / t) + '</span>').join('') + '</div>';
+}
+
+async function asignarEquipo(mbId, eqId) {
+  const mb = (base ? base.miembros : miembros).find(x => x.id === mbId); if (!mb) return;
+  try {
+    if (!esDemo()) await api('miembros?id=eq.' + encodeURIComponent(mbId), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ equipo_id: eqId }) });
+    mb.equipo_id = eqId; render();
+    aviso(mb.nombre + (eqId ? ' ahora pertenece a ' + nombreEquipo(eqId) + '.' : ' quedó sin equipo.'));
+  } catch (e) { aviso('No se pudo guardar: ' + e.message, 'error'); }
+}
+function enlazarAsignarEq(ambito) {
+  document.querySelectorAll(ambito + ' .asignarEq').forEach(sel => {
+    sel.addEventListener('click', e => e.stopPropagation());
+    sel.addEventListener('change', () => asignarEquipo(sel.dataset.mb, sel.value || null));
+  });
+}
+
+// Ajustes: alta, edición y baja de equipos
+function renderEquiposAjustes() {
+  const el = $('#aEquipos'); if (!el) return;
+  el.innerHTML = equipos.length ? equipos.map(e => {
+    const n = (base ? base.miembros : miembros).filter(m => m.equipo_id === e.id).length;
+    return '<div class="eq-fila" data-id="' + esc(e.id) + '"><input class="eqN" value="' + esc(e.nombre) + '" aria-label="Nombre del equipo"><input class="eqL" value="' + esc(e.lider || '') + '" placeholder="Líder" aria-label="Líder"><input class="eqC" type="email" value="' + esc(e.lider_correo || '') + '" placeholder="Correo del líder" aria-label="Correo del líder"><span class="small">' + n + ' miembro(s)</span><button class="btn-s" data-eq-guardar>Guardar</button><button class="btn-s" data-eq-borrar>Eliminar</button></div>';
+  }).join('') : '<p class="small">Aún no hay equipos. Ejecuta supabase/04-equipos.sql o agrégalos abajo.</p>';
+  el.querySelectorAll('[data-eq-guardar]').forEach(b => b.addEventListener('click', async () => {
+    const fila = b.closest('.eq-fila'), eq = equipos.find(x => x.id === fila.dataset.id);
+    const datos = { nombre: fila.querySelector('.eqN').value.trim(), lider: fila.querySelector('.eqL').value.trim() || null, lider_correo: fila.querySelector('.eqC').value.trim() || null };
+    if (!datos.nombre) return aviso('El equipo necesita un nombre.', 'error');
+    try {
+      if (!esDemo()) await api('equipos?id=eq.' + encodeURIComponent(eq.id), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(datos) });
+      Object.assign(eq, datos); render(); aviso('Equipo ' + datos.nombre + ' guardado.');
+    } catch (e) { aviso('No se pudo guardar: ' + e.message, 'error'); }
+  }));
+  el.querySelectorAll('[data-eq-borrar]').forEach(b => b.addEventListener('click', async () => {
+    const eq = equipos.find(x => x.id === b.closest('.eq-fila').dataset.id);
+    const ok = await dialogo({ titulo: '¿Eliminar el equipo ' + eq.nombre + '?', texto: 'Sus miembros quedarán sin equipo. No se borra ningún consumo ni sesión.', aceptar: 'Eliminar equipo', peligro: true });
+    if (!ok) return;
+    try {
+      if (!esDemo()) await api('equipos?id=eq.' + encodeURIComponent(eq.id), { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+      equipos = equipos.filter(x => x.id !== eq.id);
+      (base ? base.miembros : miembros).forEach(m => { if (m.equipo_id === eq.id) m.equipo_id = null; });
+      if (filtroEquipo === eq.id) { filtroEquipo = null; store.set('ct_eq', ''); }
+      render(); aviso('Equipo ' + eq.nombre + ' eliminado.');
+    } catch (e) { aviso('No se pudo eliminar: ' + e.message, 'error'); }
+  }));
+}
+
 // ---------- listas móviles ----------
 const iniciales = n => String(n || '?').replace(/\(.*?\)/g, '').trim().split(/\s+/).slice(0, 2).map(p => p[0] || '').join('').toUpperCase() || '?';
 function itemMiembro(g, totalCosto, maxC, conBorrar) {
   return '<article class="mi" data-ficha="' + esc(g.mb.id) + '" tabindex="0" role="button" aria-label="Ver ficha de ' + esc(g.mb.nombre) + '">' +
     '<div class="mi-av">' + esc(iniciales(g.mb.nombre)) + '</div>' +
-    '<div class="mi-c"><b>' + esc(g.mb.nombre) + '</b><small>' + g.maquinas.length + ' máquina(s)' + (g.maquinas.length ? ' · ' + estadoReporte(g.ultimo) : '') + '</small>' +
+    '<div class="mi-c"><b>' + esc(g.mb.nombre) + '</b><small>' + (nombreEquipo(g.mb.equipo_id) ? '<span class="chip-eq">' + esc(nombreEquipo(g.mb.equipo_id)) + '</span> ' : '') + g.maquinas.length + ' máquina(s)' + (g.maquinas.length ? ' · ' + estadoReporte(g.ultimo) : '') + '</small>' +
     '<div class="mi-bar"><i style="width:' + (g.costo / maxC * 100).toFixed(1) + '%"></i></div>' +
     (g.nPersonal ? '<span class="flag c">Personal: ' + usd(g.personal) + '</span>' : '') + '</div>' +
     '<div class="mi-n"><b>' + usd(g.costo) + '</b><small>' + pct(g.costo / (totalCosto || 1)) + '</small>' +
@@ -1275,6 +1438,7 @@ function renderTop(equipo, totalCosto) {
 
 // ---------- ajustes: palabras clave y carpetas de trabajo ----------
 function renderAjustes() {
+  renderEquiposAjustes();
   const ta = $('#aPalabras');
   if (document.activeElement !== ta) ta.value = ajustes.palabras_personales.join(', ');
   $('#aCarpetas').innerHTML = ajustes.carpetas_trabajo.length
@@ -1306,7 +1470,7 @@ function abrirFicha(id) {
   const fh = d => new Date(d).toLocaleString('es-PE', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
   const top = [...ses].sort((a, b) => b.costo - a.costo).slice(0, 15);
   $('#fichaCont').innerHTML = `
-    <div class="ficha-cab"><div><span class="eyebrow">Ficha del miembro</span><h3>${esc(mb.nombre)}</h3>${mb.correo ? `<div class="small">${esc(mb.correo)}</div>` : ''}</div>
+    <div class="ficha-cab"><div><span class="eyebrow">Ficha del miembro</span><h3>${esc(mb.nombre)}</h3>${mb.correo ? `<div class="small">${esc(mb.correo)}</div>` : ''}${equipos.length ? `<label class="ficha-eq">Equipo <select class="asignarEq" data-mb="${esc(mb.id)}">${opcEquipo(mb.equipo_id)}</select></label>` : ''}</div>
       <button class="btn-s" id="fichaCerrar" aria-label="Cerrar">Cerrar ✕</button></div>
     <div class="ficha-kpis">
       <div><span>Costo eq.</span><b>${usd(costoM)}</b><small>${pct(costoM / (totalEq || 1))} del equipo</small></div>
@@ -1327,6 +1491,7 @@ function abrirFicha(id) {
   const dlg = $('#ficha');
   dlg.showModal();
   $('#fichaCerrar').onclick = () => dlg.close();
+  enlazarAsignarEq('#fichaCont');
   $('#fichaVerSes').onclick = () => { dlg.close(); filtroMiembro = id; filtroSes = 'todas'; document.querySelectorAll('#fSes button').forEach(x => x.setAttribute('aria-pressed', x.dataset.f === 'todas')); renderSesiones(); irA('sesiones'); };
 }
 function correoSesion() {
@@ -1387,7 +1552,9 @@ function terminal() {
 function demo() {
   // Datos sintéticos para previsualizar (abrir dashboard.html#demo).
   // Ana tiene dos máquinas; VM-LDS-103 y VM-LDS-107 están sin asignar (dispara la alerta de cuadre).
-  miembros = ['Ana Torres', 'Luis Rojas', 'Carla Díaz', 'Pedro Vega', 'Rosa Medina'].map((n, i) => ({ id: 'm' + i, nombre: n, correo: n.split(' ')[0].toLowerCase() + '@dlwlatam.com', activo: true }));
+  equipos = [{ id: 'eq1', nombre: 'QA', lider: 'Liliana', lider_correo: 'liliana@dlwlatam.com' }, { id: 'eq2', nombre: 'Dev', lider: 'Carlos', lider_correo: 'carlos@dlwlatam.com' }];
+  const eqDe = ['eq1', 'eq2', 'eq1', 'eq2', null];
+  miembros = ['Ana Torres', 'Luis Rojas', 'Carla Díaz', 'Pedro Vega', 'Rosa Medina'].map((n, i) => ({ id: 'm' + i, nombre: n, correo: n.split(' ')[0].toLowerCase() + '@dlwlatam.com', activo: true, equipo_id: eqDe[i] }));
   const asignacion = ['m0', 'm1', null, 'm2', 'm3', 'm0', null];
   maquinas = asignacion.map((mid, i) => ({ machine_id: 'demo' + String(i).padStart(20, '0'), hostname: `VM-LDS-${101 + i}`, usuario_windows: `analista${i + 1}_dw`, miembro_id: mid, version_agente: '2.1.0', primera_vez: new Date(Date.now() - (i === 6 ? 2 : 40) * 864e5).toISOString(), ultimo_reporte: new Date(Date.now() - [0.3, 2, 30, 0.5, 80, 1, 5][i] * 36e5).toISOString() }));
   const titulos = [
@@ -1411,6 +1578,7 @@ function demo() {
   }));
   if (dias) { const desde = isoDia(new Date(Date.now() - (dias - 1) * 864e5)); consumo = consumo.filter(r => r.dia >= desde); sesiones = sesiones.filter(s => s.inicio.slice(0, 10) >= desde); }
   prepararDatos();
+  base = { maquinas, consumo, miembros, sesiones };
   mostrar('dash'); $('#subtitulo').textContent = 'MODO DEMO · datos sintéticos'; animar = true; render();
 }
 async function iniciar() {
@@ -1451,11 +1619,23 @@ $('#fMiembro').addEventListener('submit', async e => {
   const nombre = $('#mNombre').value.trim(), correo = $('#mCorreo').value.trim() || null;
   if (!nombre) return;
   try {
-    if (esDemo()) { miembros.push({ id: 'm' + Date.now(), nombre, correo, activo: true }); render(); }
-    else { await api('miembros', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ nombre, correo }) }); await cargar(); }
+    await crearMiembro(nombre, correo, $('#mEquipo').value || null);
+    render();
     $('#mNombre').value = ''; $('#mCorreo').value = '';
     aviso(`${nombre} agregado al equipo.`);
   } catch (err) { aviso('No se pudo agregar: ' + err.message, 'error'); }
+});
+$('#fEquipo').addEventListener('submit', async e => {
+  e.preventDefault();
+  const datos = { nombre: $('#eqNombre').value.trim(), lider: $('#eqLider').value.trim() || null, lider_correo: $('#eqCorreo').value.trim() || null };
+  if (!datos.nombre) return;
+  try {
+    if (esDemo()) equipos.push({ id: 'eq' + Date.now(), ...datos });
+    else { const r = await api('equipos', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(datos) }); const [eq] = await r.json(); equipos.push(eq); }
+    equipos.sort((a, b) => a.nombre.localeCompare(b.nombre));
+    $('#eqNombre').value = $('#eqLider').value = $('#eqCorreo').value = '';
+    render(); aviso('Equipo ' + datos.nombre + ' creado.');
+  } catch (err) { aviso('No se pudo crear: ' + err.message, 'error'); }
 });
 $('#bSalir').addEventListener('click', () => { store.del('ct_sesion'); sesion = null; mostrar('login'); });
 let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => consumo.length && render(), 150); });
