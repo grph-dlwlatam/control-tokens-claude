@@ -16,6 +16,19 @@ copy /y "%ORIGEN%agente.js"    "%DEST%\" >nul || goto error
 copy /y "%ORIGEN%ejecutar.cmd" "%DEST%\" >nul || goto error
 copy /y "%ORIGEN%config.json"  "%DEST%\" >nul || goto error
 
+if exist "%DEST%\identidad.json" goto enviar
+echo Identificate para registrar tu consumo (solo una vez).
+:pedir
+set "NOMBRE="
+set "CORREO="
+set /p "NOMBRE=  Nombre completo: "
+set /p "CORREO=  Correo DLW (@dlwlatam.com): "
+set "NOMBRE=%NOMBRE:"=%"
+echo %NOMBRE%| findstr /c:" " >nul || (echo   Escribe tu nombre completo ^(nombre y apellido^). & goto pedir)
+echo %CORREO%| findstr /r /i /x "[a-z0-9._+-]*@dlwlatam\.com" >nul || (echo   El correo debe terminar en @dlwlatam.com. & goto pedir)
+> "%DEST%\identidad.json" echo {"nombre":"%NOMBRE%","correo":"%CORREO%"}
+echo.
+:enviar
 echo [1/2] Enviando historial de consumo...
 call "%DEST%\ejecutar.cmd" --completo
 if errorlevel 1 (

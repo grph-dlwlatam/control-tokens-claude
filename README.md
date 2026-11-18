@@ -50,12 +50,13 @@ go build -trimpath -ldflags "-H windowsgui -s -w" -o ../dist/GestorTokens.exe .
 
 - **Doble clic:** se copia a `%LOCALAPPDATA%\GestorTokens`, envía el historial, programa la tarea `GestorTokensDLW` cada 30 minutos y muestra el resultado. No requiere administrador.
 - `GestorTokens.exe --desinstalar` quita la tarea y los archivos. `--dry-run` deja en `%LOCALAPPDATA%\GestorTokens\dry-run.json` lo que enviaría.
+- La primera vez abre una ventana que pide **nombre completo y correo @dlwlatam.com** (no acepta otro dominio). Con `--cambiar-identidad` se corrige. Con la migración 05, la máquina se vincula sola al miembro con ese correo (o lo crea); la asignación manual de la líder siempre manda.
 - Solo envía si Claude Code está conectado con la cuenta compartida (`cuentaObjetivo` en `main.go`).
 - No está firmado. Si SmartScreen, el antivirus o AppLocker lo bloquean, usar la versión `.cmd`.
 
 ## Miembros, cuadre y sesiones (migración 02)
 
-Ejecutar una vez, en orden, en el SQL Editor (después de `esquema.sql`): [supabase/02-sesiones.sql](supabase/02-sesiones.sql), [supabase/03-ajustes.sql](supabase/03-ajustes.sql) y [supabase/04-equipos.sql](supabase/04-equipos.sql) (equipos QA/Dev con su líder; el panel se filtra por equipo y abre filtrado si el usuario es líder).
+Ejecutar una vez, en orden, en el SQL Editor (después de `esquema.sql`): [supabase/02-sesiones.sql](supabase/02-sesiones.sql), [supabase/03-ajustes.sql](supabase/03-ajustes.sql) , [supabase/04-equipos.sql](supabase/04-equipos.sql) y [supabase/05-identidad.sql](supabase/05-identidad.sql) (equipos QA/Dev con su líder; el panel se filtra por equipo y abre filtrado si el usuario es líder).
 
 - **Miembros:** cada persona es única y puede tener varias máquinas. La líder crea los miembros en el dashboard y asigna cada máquina a uno.
 - **Cuadre:** el dashboard alerta cuando lo gastado no coincide con lo asignado. Avisa de:

@@ -13,7 +13,7 @@ const os = require('os');
 const crypto = require('crypto');
 const cp = require('child_process');
 
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 const DIR = __dirname;
 const ARGS = process.argv.slice(2);
 const DRY = ARGS.includes('--dry-run');
@@ -255,6 +255,8 @@ function main() {
   const desde = completo ? null : diaLocal(new Date(Date.now() - (dias - 1) * 86400000));
 
   const id = identidad();
+  const quien = leerJson(path.join(DIR, 'identidad.json'), {}) || {};
+  const decl = /^[a-z0-9._%+-]+@dlwlatam\.com$/i.test(quien.correo || '') ? { nombre: quien.nombre || '', correo: String(quien.correo).toLowerCase() } : { nombre: '', correo: '' };
   const { archivos, filas, sesiones } = recolectar(desde, carpetas);
   log(`maquina=${id.hostname} usuario=${id.usuario} id=${id.machine_id} archivos=${archivos} filas=${filas.length} sesiones=${sesiones.length} desde=${desde || 'inicio'}`);
 
@@ -267,7 +269,7 @@ function main() {
   const LF = 2000, LS = 300;
   const total = filas.length;
   for (let n = 0; n === 0 || n * LF < filas.length || n * LS < sesiones.length; n++) {
-    enviar(cfg, { ...id, version: VERSION, filas: filas.slice(n * LF, (n + 1) * LF), sesiones: sesiones.slice(n * LS, (n + 1) * LS) });
+    enviar(cfg, { ...id, ...decl, version: VERSION, filas: filas.slice(n * LF, (n + 1) * LF), sesiones: sesiones.slice(n * LS, (n + 1) * LS) });
   }
   estado.historialEnviado = true;
   estado.ultimoEnvio = new Date().toISOString();

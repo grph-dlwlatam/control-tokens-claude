@@ -11,6 +11,7 @@
 //	GestorTokens.exe --desinstalar  quita la tarea programada y los archivos
 //	GestorTokens.exe --dry-run      escribe en un archivo lo que enviaría, sin enviar
 //	GestorTokens.exe --completo     reenvía todo el historial
+//	GestorTokens.exe --cambiar-identidad  vuelve a pedir nombre y correo @dlwlatam.com
 package main
 
 import (
@@ -34,7 +35,7 @@ import (
 )
 
 const (
-	version       = "2.1.0"
+	version       = "2.2.0"
 	nombreTarea   = "GestorTokensDLW"
 	nombreExe     = "GestorTokens.exe"
 	diasRecalculo = 7
@@ -66,6 +67,23 @@ func main() {
 	}
 
 	interactivo := !flags["silencioso"] && !flags["dry-run"]
+	// La primera vez (o con --cambiar-identidad) la persona debe identificarse con su correo @dlwlatam.com.
+	if interactivo && !flags["sin-mensajes"] {
+		previa := leerIdentidad()
+		if previa == nil || flags["cambiar-identidad"] {
+			nueva := pedirIdentidad(previa)
+			if nueva == nil {
+				if previa == nil {
+					mensaje("Para registrar tu consumo debes identificarte con tu nombre completo y tu correo @dlwlatam.com.\n\nNo se instaló nada. Vuelve a abrir GestorTokens.exe cuando quieras continuar.", true)
+					return
+				}
+			} else if err := guardarIdentidad(*nueva); err != nil {
+				logf("ERROR guardando identidad: %v", err)
+			} else {
+				logf("Identidad registrada: %s <%s>", nueva.Nombre, nueva.Correo)
+			}
+		}
+	}
 	instalado := ""
 	if interactivo {
 		var err error
@@ -113,7 +131,7 @@ func instalar() (string, error) {
 func desinstalar() {
 	_, _ = ejecutar("schtasks", "/delete", "/f", "/tn", nombreTarea)
 	_ = os.Remove(filepath.Join(os.Getenv("APPDATA"), `Microsoft\Windows\Start Menu\Programs\Startup`, nombreTarea+".lnk.cmd"))
-	for _, f := range []string{"agente.log", "estado.json"} {
+	for _, f := range []string{"agente.log", "estado.json", "identidad.json", "dry-run.json"} {
 		_ = os.Remove(filepath.Join(dirInstal, f))
 	}
 	// Si el .exe que corre es el instalado no puede borrarse a sí mismo: se borra 3 s después de salir.
@@ -204,7 +222,12 @@ func medir() (string, error) {
 	archivos, filas, sesiones := recolectar(desde, carpetas)
 	logf("maquina=%s usuario=%s id=%s archivos=%d filas=%d sesiones=%d desde=%s", host, usuario, id, archivos, len(filas), len(sesiones), valor(desde, "inicio"))
 
-	payload := map[string]any{"machine_id": id, "hostname": host, "usuario": usuario, "version": version, "filas": filas, "sesiones": sesiones}
+	quien := leerIdentidad()
+	nombre, correo := "", ""
+	if quien != nil {
+		nombre, correo = quien.Nombre, quien.Correo
+	}
+	payload := map[string]any{"machine_id": id, "hostname": host, "usuario": usuario, "version": version, "nombre": nombre, "correo": correo, "filas": filas, "sesiones": sesiones}
 	if flags["dry-run"] {
 		b, _ := json.MarshalIndent(payload, "", "  ")
 		salida := filepath.Join(dirInstal, "dry-run.json")
@@ -221,7 +244,7 @@ func medir() (string, error) {
 		f0, f1 := min(n*loteF, len(filas)), min((n+1)*loteF, len(filas))
 		s0, s1 := min(n*loteS, len(sesiones)), min((n+1)*loteS, len(sesiones))
 		parte := map[string]any{"machine_id": id, "hostname": host, "usuario": usuario, "version": version,
-			"filas": filas[f0:f1], "sesiones": sesiones[s0:s1]}
+			"nombre": nombre, "correo": correo, "filas": filas[f0:f1], "sesiones": sesiones[s0:s1]}
 		if err := enviar(parte); err != nil {
 			return "", err
 		}
@@ -232,7 +255,11 @@ func medir() (string, error) {
 		_ = os.WriteFile(filepath.Join(dirInstal, "estado.json"), b, 0o644)
 	}
 	logf("OK: %d filas enviadas.", len(filas))
-	return fmt.Sprintf("Consumo enviado correctamente.\n\nEquipo: %s · %s\nDías/modelos reportados: %d", host, usuario, len(filas)), nil
+	quienTxt := ""
+	if quien != nil {
+		quienTxt = fmt.Sprintf("\nRegistrado como: %s <%s>", quien.Nombre, quien.Correo)
+	}
+	return fmt.Sprintf("Consumo enviado correctamente.\n\nEquipo: %s · %s%s\nDías/modelos reportados: %d", host, usuario, quienTxt, len(filas)), nil
 }
 
 type perfil struct{ dir, cuenta string }

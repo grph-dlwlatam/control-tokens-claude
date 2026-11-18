@@ -507,6 +507,7 @@ dialog#dlg.peligro { border-top-color: var(--critical); }
   .tb-x { width: 40px; height: 40px; border-color: var(--border); }
 }
 
+.declara { font-size: 12px; color: var(--good); font-weight: 600; margin-top: 1px; }
 /* Paginación */
 .pager { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
 .pager:empty { display: none; }
@@ -1154,7 +1155,7 @@ function renderRanking(ranking, totalCosto) {
       return `<tr style="animation-delay:${Math.min(i, 12) * 45}ms">
         <td><span class="pos">${ini + i + 1}</span></td>
         <td><select class="asignar" data-id="${esc(a.m.machine_id)}" aria-label="Miembro de ${esc(a.m.hostname)}">${opciones(a.m.miembro_id)}</select></td>
-        <td>${esc(a.m.hostname)} · ${esc(a.m.usuario_windows)}<div class="small">${esc(a.m.machine_id.slice(0, 8))}${a.m.version_agente ? ' · agente ' + esc(a.m.version_agente) : ''}</div></td>
+        <td>${esc(a.m.hostname)} · ${esc(a.m.usuario_windows)}${declarado(a.m)}<div class="small">${esc(a.m.machine_id.slice(0, 8))}${a.m.version_agente ? ' · agente ' + esc(a.m.version_agente) : ''}</div></td>
         <td class="n"><b>${usd(a.costo)}</b></td>
         <td class="n"><div class="share">${pct(a.costo / (totalCosto || 1))}<span class="bar"><i style="width:${(a.costo / maxC * 100).toFixed(1)}%"></i></span></div></td>
         <td class="n">${tok(a.output)}</td>
@@ -1165,7 +1166,7 @@ function renderRanking(ranking, totalCosto) {
       </tr>`;
     }).join('') + '</tbody>';
   $('#lmMaquinas').innerHTML = pagMaq.length ? pagMaq.map(a => '<article class="mq' + (miembroDe(a.m) ? '' : ' sin') + '">' +
-      '<div class="mq-top"><div class="mq-id"><b>' + esc(a.m.hostname) + '</b><small>' + esc(a.m.usuario_windows) + ' · ' + estadoReporte(a.m.ultimo_reporte) + '</small></div>' +
+      '<div class="mq-top"><div class="mq-id"><b>' + esc(a.m.hostname) + '</b>' + declarado(a.m) + '<small>' + esc(a.m.usuario_windows) + ' · ' + estadoReporte(a.m.ultimo_reporte) + '</small></div>' +
       '<div class="mi-n"><b>' + usd(a.costo) + '</b><small>' + pct(a.costo / (totalCosto || 1)) + '</small></div></div>' +
       '<label class="mq-lbl">Miembro' + (miembroDe(a.m) ? '' : ' <span class="flag c">Sin asignar</span>') + '</label>' +
       '<select class="asignar" data-id="' + esc(a.m.machine_id) + '" aria-label="Miembro de ' + esc(a.m.hostname) + '">' + opciones(a.m.miembro_id) + '</select></article>').join('') : vacioLista('Aún no hay máquinas reportando.');
@@ -1404,6 +1405,11 @@ function renderEquiposAjustes() {
     } catch (e) { aviso('No se pudo eliminar: ' + e.message, 'error'); }
   }));
 }
+
+// Nombre y correo que la persona declaró en el agente (GestorTokens.exe 2.2+).
+const declarado = m => m && m.correo_declarado
+  ? '<div class="declara" title="Declarado en el agente">✓ ' + esc(m.nombre_declarado || '') + ' · ' + esc(m.correo_declarado) + '</div>'
+  : '';
 
 // ---------- listas móviles ----------
 const iniciales = n => String(n || '?').replace(/\(.*?\)/g, '').trim().split(/\s+/).slice(0, 2).map(p => p[0] || '').join('').toUpperCase() || '?';
